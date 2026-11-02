@@ -10,6 +10,7 @@ Build and install (from the repo root, with ADB on):
 tools/docker-build.sh caleb/adb-on-boot
 adb install -r caleb/adb-on-boot/app/build/outputs/apk/release/app-release.apk
 adb shell pm grant com.caleb.adbonboot android.permission.WRITE_SECURE_SETTINGS
+adb shell cmd deviceidle whitelist +com.caleb.adbonboot   # lets its backup job run: an app with no screen counts as "never used"
 adb shell am start -n com.caleb.adbonboot/.RunNow   # test run; also wakes the app for its first boot
 adb logcat -d -s AdbOnBoot                            # "wireless debugging is on"
 ```

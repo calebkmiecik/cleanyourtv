@@ -31,16 +31,22 @@ public class Wake extends JobService {
         Log.i(TAG, "queued until Wi-Fi is up");
     }
 
+    /** Sets adb_wifi_enabled=1. False when WRITE_SECURE_SETTINGS has not been granted. */
+    static boolean turnOn(Context c) {
+        try {
+            Settings.Global.putInt(c.getContentResolver(), KEY, 1);
+            return true;
+        } catch (SecurityException e) {
+            Log.e(TAG, "WRITE_SECURE_SETTINGS is not granted; run: pm grant " + c.getPackageName()
+                    + " android.permission.WRITE_SECURE_SETTINGS", e);
+            return false;
+        }
+    }
+
     @Override
     public boolean onStartJob(JobParameters params) {
         ContentResolver cr = getContentResolver();
-        try {
-            Settings.Global.putInt(cr, KEY, 1);
-        } catch (SecurityException e) {
-            Log.e(TAG, "WRITE_SECURE_SETTINGS is not granted; run: pm grant " + getPackageName()
-                    + " android.permission.WRITE_SECURE_SETTINGS", e);
-            return false; // retrying cannot help until the grant
-        }
+        if (!turnOn(this)) return false; // retrying cannot help until the grant
         handler.postDelayed(() -> {
             boolean on = Settings.Global.getInt(cr, KEY, 0) == 1;
             Log.i(TAG, on ? "wireless debugging is on" : "wireless debugging did not stick; retrying");
