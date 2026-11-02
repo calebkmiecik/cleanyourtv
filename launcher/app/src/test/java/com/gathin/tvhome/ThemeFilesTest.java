@@ -44,6 +44,14 @@ public class ThemeFilesTest {
         assertNull(ThemeFiles.path(Arrays.asList("wallpapers", "sub", "dusk.jpg")));
     }
 
+    @Test public void pinsAndTheirScenesAreAllowed() {
+        assertEquals("pins.json", ThemeFiles.path(Collections.singletonList("pins.json")));
+        assertEquals("scenes/seinfeld.jpg", ThemeFiles.path(Arrays.asList("scenes", "seinfeld.jpg")));
+        assertNull(ThemeFiles.path(Arrays.asList("scenes", "../config.json")));
+        assertNull(ThemeFiles.path(Arrays.asList("scenes", "notes.txt")));
+        assertTrue(ThemeFiles.isCollection(Collections.singletonList("scenes")));
+    }
+
     @Test public void onlyTheBareFolderIsTheCollection() {
         assertTrue(ThemeFiles.isCollection(Collections.singletonList("wallpapers")));
         assertFalse(ThemeFiles.isCollection(Arrays.asList("wallpapers", "dusk.jpg")));

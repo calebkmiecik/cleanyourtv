@@ -6,6 +6,9 @@ import java.util.regex.Pattern;
 /** The files ThemeProvider may write or delete under Config.dir, by the URI's path segments. */
 final class ThemeFiles {
     static final String WALLPAPERS = "wallpapers";
+    /** Pinned shows and their scene pictures (Pins). */
+    static final String PINS = "pins.json";
+    static final String SCENES = "scenes";
     /** The names tools/theme.sh accepts for a collection image, and the types WallpaperRotation reads. */
     private static final Pattern IMAGE = Pattern.compile("[A-Za-z0-9_.-]+\\.(jpg|jpeg|png|webp)",
             Pattern.CASE_INSENSITIVE);
@@ -18,18 +21,23 @@ final class ThemeFiles {
         if (segments.size() == 1) {
             String name = segments.get(0);
             return Config.FILE_NAME.equals(name) || "wallpaper.jpg".equals(name) || "theme_revision".equals(name)
+                    || PINS.equals(name)
                     ? name : null;
         }
         if (segments.size() == 2 && WALLPAPERS.equals(segments.get(0))
                 && (collectionImage(segments.get(1)) || WallpaperCaptions.FILE_NAME.equals(segments.get(1)))) {
             return WALLPAPERS + "/" + segments.get(1);
         }
+        if (segments.size() == 2 && SCENES.equals(segments.get(0)) && collectionImage(segments.get(1))) {
+            return SCENES + "/" + segments.get(1);
+        }
         return null;
     }
 
-    /** True for "wallpapers" alone: a delete of it clears the collection's images. */
+    /** True for "wallpapers" or "scenes" alone: a delete of it clears that folder's images. */
     static boolean isCollection(List<String> segments) {
-        return segments != null && segments.size() == 1 && WALLPAPERS.equals(segments.get(0));
+        return segments != null && segments.size() == 1
+                && (WALLPAPERS.equals(segments.get(0)) || SCENES.equals(segments.get(0)));
     }
 
     static boolean collectionImage(String name) {

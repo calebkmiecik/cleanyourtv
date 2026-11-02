@@ -112,8 +112,11 @@ del() { echo "rm -f $DIR/$1 2>/dev/null; content delete --uri $URI/$1 2>/dev/nul
 # that left the pictures behind still shows the theme it just removed. Both paths use this one string.
 CLEAR_WALLPAPERS="rm -f $DIR/wallpapers/*.[jJ][pP][gG] $DIR/wallpapers/*.[jJ][pP][eE][gG] $DIR/wallpapers/*.[pP][nN][gG] $DIR/wallpapers/*.[wW][eE][bB][pP] 2>/dev/null; content delete --uri $URI/wallpapers 2>/dev/null"
 
+# Pinned shows and their scene pictures (Pins.java): emptied before a push writes the theme's own, and on --reset.
+CLEAR_SCENES="rm -f $DIR/scenes/*.[jJ][pP][gG] $DIR/scenes/*.[jJ][pP][eE][gG] $DIR/scenes/*.[pP][nN][gG] $DIR/scenes/*.[wW][eE][bB][pP] 2>/dev/null; content delete --uri $URI/scenes 2>/dev/null"
+
 if [ "${1:-}" = --reset ]; then
-  tv "mkdir -p $DIR 2>/dev/null; $(del config.json); $(del wallpaper.jpg); $(del wallpapers/captions.txt); $CLEAR_WALLPAPERS; printf '%s' '$REVISION' > $TMP-theme_revision; $(put theme_revision)" >/dev/null
+  tv "mkdir -p $DIR 2>/dev/null; $(del config.json); $(del wallpaper.jpg); $(del wallpapers/captions.txt); $CLEAR_WALLPAPERS; $(del pins.json); $CLEAR_SCENES; printf '%s' '$REVISION' > $TMP-theme_revision; $(put theme_revision)" >/dev/null
   "$PY" -I theme_restart.py
   echo reset
   exit 0
@@ -168,6 +171,23 @@ if [ -d "$THEME/wallpapers" ]; then
   done
 fi
 
+# The same check for the pinned shows' scene pictures.
+SCENE_NAMES=""
+if [ -d "$THEME/scenes" ]; then
+  for IMAGE in "$THEME"/scenes/*; do
+    [ -f "$IMAGE" ] || continue
+    case "$IMAGE" in
+      *.[jJ][pP][gG]|*.[jJ][pP][eE][gG]|*.[pP][nN][gG]|*.[wW][eE][bB][pP])
+        NAME=$(basename "$IMAGE")
+        if [[ ! "$NAME" =~ ^[A-Za-z0-9_.-]+$ || "$NAME" == *..* ]]; then
+          echo "unsupported scene filename: $NAME (letters, digits, '.', '_' and '-', no '..'). Nothing was sent to the TV." >&2
+          exit 2
+        fi
+        SCENE_NAMES="$SCENE_NAMES $NAME" ;;
+    esac
+  done
+fi
+
 tv "mkdir -p $DIR" >/dev/null 2>&1 || true
 tv --push "$THEME/config.json" "$TMP-config.json" >/dev/null
 tv "$(put config.json)"
@@ -188,6 +208,17 @@ if [ -f "$THEME/wallpapers/captions.txt" ]; then
   tv "$(put wallpapers/captions.txt)" >/dev/null
 else
   tv "$(del wallpapers/captions.txt)" >/dev/null
+fi
+tv "$CLEAR_SCENES" >/dev/null
+for NAME in $SCENE_NAMES; do
+  "$PY" -I b64push.py "$THEME/scenes/$NAME" "$(stage "scenes/$NAME")"
+  tv "$(put "scenes/$NAME")" >/dev/null
+done
+if [ -f "$THEME/pins.json" ]; then
+  "$PY" -I b64push.py "$THEME/pins.json" "$(stage pins.json)"
+  tv "$(put pins.json)" >/dev/null
+else
+  tv "$(del pins.json)" >/dev/null
 fi
 tv "printf '%s' '$REVISION' > $TMP-theme_revision; $(put theme_revision)" >/dev/null
 "$PY" -I theme_restart.py

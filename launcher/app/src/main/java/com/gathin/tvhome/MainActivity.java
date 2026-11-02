@@ -173,6 +173,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private boolean heroDotsShown = true;
     /** The artwork's opacity behind the cinematic shelf (config.xml cinematic_art); 0 leaves it out. */
     private float heroArtAlpha = 0.5f;
+    private float heroArtTarget = 0.5f;   // the shown art's alpha: heroArtAlpha, or a pinned scene's dimmed one
+    private Map<String, Pins.Pin> pins = new HashMap<>();   // pins.json, by package
     /** Softened artwork per app (HeroArt, about 5 KB each), made the first time its dock tile is focused. */
     private final Map<String, Bitmap> heroArtCache = new HashMap<>();
     /** The app whose artwork heroArt shows, so focusing it again only fades it back in. */
@@ -539,6 +541,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         chesterLooks = cfg.chesterLooks;
         lookLocation = ChesterLooks.parseLocation(cfg.location);
         heroArtAlpha = cfg.cinematicArt / 100f;
+        heroArtTarget = heroArtAlpha;
+        pins = Pins.load(this);
         if (cinematic) setUpCinematicShelf(cfg.cinematicScrim);
         // dock_title false: the name above the dock (and the cinematic lines under it) never shows; the glow
         // still follows the dock.
@@ -1976,7 +1980,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** The shelf's text for this dock app: its name and, on the cinematic shelf, "Last opened" and the dots. */
     private void fillHero(int position, String label) {
-        heroName.setText(label);
+        Pins.Pin pin = pins.get(adapter.packageAt(position));
+        heroName.setText(pin != null ? pin.show : label);
         if (!cinematic) return;
         updateHeroMeta(position);
         updateHeroDots(position);
@@ -2037,12 +2042,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             fadeHeroArt(420);
             return;
         }
+        // With pins: a pinned show's scene, dimmed by its brightness, and a plain wall for the other apps.
+        Pins.Pin pin = pins.get(adapter.packageAt(position));
         Bitmap art = heroArtCache.get(key);
         if (art == null) {
-            art = HeroArt.from(adapter.artworkAt(position));
+            art = pins.isEmpty() ? HeroArt.from(adapter.artworkAt(position)) : pin != null ? Pins.scene(this, pin) : null;
             if (art != null) heroArtCache.put(key, art);
         }
         heroArtKey = key;
+        heroArtTarget = pins.isEmpty() ? heroArtAlpha : art == null ? 0f : Pins.dim(Pins.meanLuma(art), heroArtAlpha);
+        heroArt.setScaleType(pins.isEmpty() ? ImageView.ScaleType.FIT_XY : ImageView.ScaleType.CENTER_CROP);
         final Bitmap next = art;
         if (!animations || reducedMotion || heroArt.getAlpha() == 0f) {
             heroArt.setImageBitmap(next);
@@ -2051,13 +2060,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         heroArt.animate().alpha(0f).setDuration(140).withEndAction(() -> {
             heroArt.setImageBitmap(next);
-            heroArt.animate().alpha(heroArtAlpha).setDuration(420).start();
+            heroArt.animate().alpha(heroArtTarget).setDuration(420).start();
         }).start();
     }
 
     private void fadeHeroArt(int ms) {
-        if (!animations) heroArt.setAlpha(heroArtAlpha);
-        else heroArt.animate().alpha(heroArtAlpha).setDuration(reducedMotion ? Math.min(ms, Motion.REDUCED_MS) : ms).start();
+        if (!animations) heroArt.setAlpha(heroArtTarget);
+        else heroArt.animate().alpha(heroArtTarget).setDuration(reducedMotion ? Math.min(ms, Motion.REDUCED_MS) : ms).start();
     }
 
     /** "Last opened yesterday, 9:40 PM", the time in white; nothing (but the same height) when it was never seen. */

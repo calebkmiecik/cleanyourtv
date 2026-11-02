@@ -284,3 +284,15 @@ the repository's `README.md`, in its Themes feature row (the `N ship in themes/`
 `tests/test_readme_theme_count.py` counts the folders here that carry a `config.json` and fails until the
 two agree. Keep the dock list generic (the big streaming apps) unless the theme is for a specific TV,
 and say which TV you tried it on in the PR description.
+
+## Pinned shows
+
+With `cinematic_home`, a theme can pin a show to an app: a `pins.json` beside `config.json` and the
+scene pictures in a `scenes/` folder. Focusing a pinned app fills the shelf with its scene (dimmed more
+when the picture is bright) and its title becomes the show's name; with any pins set, apps without one
+keep a plain background. `tools/theme.sh` pushes both and `--reset` removes them.
+
+```json
+{"pins": [{"app": "com.netflix.ninja", "show": "Seinfeld", "scene": "seinfeld.jpg",
+           "link": "http://www.netflix.com/title/70153373"}]}
+```
