@@ -128,7 +128,7 @@
             android:layout_height="wrap_content"
             android:textColor="#FFFFFFFF"
             android:textSize="48sp"
-            android:fontFamily="@string/font_light"
+            android:fontFamily="@string/font_serif_regular"
             android:letterSpacing="-0.02"
             android:includeFontPadding="false"
             android:singleLine="true" />
@@ -213,7 +213,7 @@
                         android:format24Hour="HH:mm"
                         android:textColor="#FFFFFFFF"
                         android:textSize="52sp"
-                        android:fontFamily="@string/font_light"
+                        android:fontFamily="@string/font_serif_light"
                         android:letterSpacing="-0.04"
                         android:includeFontPadding="false" />
 

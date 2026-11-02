@@ -7,4 +7,7 @@
     <string name="font_light" translatable="false">@font/outfit_light</string>
     <string name="font_extralight" translatable="false">@font/outfit_extralight</string>
     <string name="font_medium" translatable="false">@font/outfit_medium</string>
+    <!-- Serif for the clock and the big titles (Caleb's projector look). -->
+    <string name="font_serif_light" translatable="false">@font/serif_light</string>
+    <string name="font_serif_regular" translatable="false">@font/serif_regular</string>
 </resources>
