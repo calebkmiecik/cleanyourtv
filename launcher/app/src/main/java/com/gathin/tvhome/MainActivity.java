@@ -176,6 +176,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private float heroArtTarget = 0.5f;   // the shown art's alpha: heroArtAlpha, or a pinned scene's dimmed one
     private Map<String, Pins.Pin> pins = new HashMap<>();   // pins.json, by package
     private JumpRow jumpRow;   // the pinned shows under the single row; null without pins
+    private View jumpFloor;   // the fade the resting cards sink into
+    /** Room the single row leaves under it for the jump row's label and peeking cards. */
+    private static final float JUMP_ROOM_DP = 92;
+
+    /** The ring's gap outside a tile: on with the jump row (Caleb's projector look), else GlassView's own fit. */
+    private float ringOut() {
+        return jumpRow != null ? 6f : 0f;
+    }
     private final JumpRow.Host jumpHost = new JumpRow.Host() {
         @Override
         public void onJumpFocused(String app) {   // the card's app on the shelf: its name and its scene
@@ -190,6 +198,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         @Override
         public void onJumpUp() {
             focusTile(lastFocused);
+        }
+
+        @Override
+        public void onJumpActive(boolean active) {   // both rows slide up together; the title steps aside
+            float to = active ? -JumpRow.LIFT_DP * density : 0f;
+            JumpRow.spring(grid, androidx.dynamicanimation.animation.DynamicAnimation.TRANSLATION_Y, to);
+            JumpRow.spring(jumpRow.view, androidx.dynamicanimation.animation.DynamicAnimation.TRANSLATION_Y, to);
+            hero.animate().alpha(active ? 0f : 1f).setDuration(220).start();
         }
 
         @Override
@@ -729,7 +745,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         grid.setAdapter(adapter);
         if (singleRow && cinematic && !pins.isEmpty()) {
             jumpRow = new JumpRow(this, jumpHost, pins, density);
-            ((FrameLayout) grid.getParent()).addView(jumpRow.view, jumpRow.layoutParams());
+            FrameLayout holder = (FrameLayout) grid.getParent();
+            holder.setClipChildren(false);
+            holder.addView(jumpRow.view, jumpRow.layoutParams());
+            jumpFloor = new View(this);   // fixed to the screen: only the resting cards sink into it
+            holder.addView(jumpFloor, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                    (int) (105 * density), Gravity.BOTTOM));
+            setFloorColor(cfg.backgroundColor);
             jumpRow.setRingColor(focusColor);
         }
 
@@ -757,7 +779,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // 7dp gap and 22dp label item_app.xml keeps for them would only lift the row: sit it that much lower.
             if (singleRow && !cfg.alwaysShowNames) want += (int) (29 * density);
             // The jump row sits under the single row: lift the row by its height.
-            if (jumpRow != null && jumpRow.view.getVisibility() == View.VISIBLE) want -= (int) (JumpRow.HEIGHT_DP * density);
+            if (jumpRow != null && jumpRow.view.getVisibility() == View.VISIBLE) want -= (int) (JUMP_ROOM_DP * density);
             if (grid.getPaddingTop() != want) {
                 grid.setPadding(grid.getPaddingLeft(), want, grid.getPaddingRight(), grid.getPaddingBottom());
                 // A vertical grid parks the dock on the new padding line by scrolling (onTileFocused); a sideways
@@ -1847,7 +1869,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         Rect r = tileRect;
         r.set(0, 0, card.getWidth(), card.getHeight());
         root.offsetDescendantRectToMyCoords(card, r);
-        float pad = 6f * density;        // matches GlassView's glow inset
+        float pad = (6f + ringOut()) * density;        // GlassView's glow inset, plus the ring's gap outside the tile
         float scale = adapter.focusScale();
         float w = card.getWidth() * scale + 2 * pad;
         float h = card.getHeight() * scale + 2 * pad;
@@ -1862,7 +1884,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             lp.height = (int) h;
             glass.setLayoutParams(lp);
             // GlassView draws its slab inset by pad, i.e. exactly over the zoomed tile: same corners as the tile.
-            glass.setRadius(AppAdapter.cornerRadius(card.getWidth(), density) * scale);
+            glass.setRadius(AppAdapter.cornerRadius(card.getWidth(), density) * scale + ringOut() * density);
         }
         glassCardW = card.getWidth();
         glassCardRect.set(r);
@@ -1924,7 +1946,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         RecyclerView.ViewHolder vh = grid.findViewHolderForAdapterPosition(pos);
         View card = vh == null ? null : vh.itemView.findViewById(R.id.card);
         if (card == null || card.getWidth() <= 0 || !card.isFocused()) return;
-        float pad = 6f * density;
+        float pad = (6f + ringOut()) * density;
         float scale = adapter.focusScale();
         int w = (int) (card.getWidth() * scale + 2 * pad);
         int h = (int) (card.getHeight() * scale + 2 * pad);
@@ -2101,6 +2123,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** "Last opened yesterday, 9:40 PM", the time in white; nothing (but the same height) when it was never seen. */
     private void updateHeroMeta(int position) {
+        if (jumpRow != null) {   // Caleb's projector look: no last-opened line, so the row sits lower
+            heroMeta.setVisibility(View.GONE);
+            return;
+        }
         long when = LastOpened.get(this, adapter.packageAt(position));
         if (when <= 0) {
             heroMeta.setVisibility(View.INVISIBLE);
@@ -2804,6 +2830,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (lunar) lunarDate.setText(Lunar.today(getResources(), lunarOffset));
     }
 
+    /** The fade under the resting cards, into the background colour. */
+    private void setFloorColor(int bg) {
+        int rgb = bg & 0xFFFFFF;
+        jumpFloor.setBackground(new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{rgb, 0xE6000000 | rgb, 0xFF000000 | rgb}));
+    }
+
     /** Lines the jump row up with the first app tile, while the row is scrolled to its start. */
     private void alignJumpRow() {
         RecyclerView.ViewHolder vh = grid.findViewHolderForAdapterPosition(0);
@@ -2828,6 +2862,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         greeting.setTextColor(muted);
         focusColor = 0xFF000000 | look[3];
         if (jumpRow != null) jumpRow.setRingColor(focusColor);
+        if (jumpFloor != null) setFloorColor(bg);
         if (!reordering && glassAccent != focusColor) {
             glassAccent = focusColor;
             glass.setAccent(focusColor);

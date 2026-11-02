@@ -7,6 +7,13 @@
       "scene_url": "https://static.tvmaze.com/uploads/images/original_untouched/244/610974.jpg",
       "card": "seinfeld-card.jpg",
       "card_url": "https://static.tvmaze.com/uploads/images/original_untouched/219/549578.jpg",
+      "logo": "seinfeld-logo.png",
+      "logo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Seinfeld_logo.svg/960px-Seinfeld_logo.svg.png",
+      "logo_key": [
+        227,
+        9,
+        34
+      ],
       "link": "http://www.netflix.com/title/70153373"
     },
     {
@@ -22,6 +29,8 @@
         1920,
         1080
       ],
+      "logo": "attack-on-titan-logo.png",
+      "logo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Attack_on_Titan_%28international_anglophone%29_logo.svg/960px-Attack_on_Titan_%28international_anglophone%29_logo.svg.png",
       "link": "https://www.crunchyroll.com/series/GR751KNZY/attack-on-titan"
     },
     {
@@ -31,6 +40,13 @@
       "scene_url": "https://static.tvmaze.com/uploads/images/original_untouched/123/308859.jpg",
       "card": "rick-and-morty-card.jpg",
       "card_url": "https://static.tvmaze.com/uploads/images/original_untouched/218/547405.jpg",
+      "logo": "rick-and-morty-logo.png",
+      "logo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b1/Rick_and_Morty.svg/960px-Rick_and_Morty.svg.png",
+      "logo_key": [
+        66,
+        180,
+        202
+      ],
       "link": "https://www.hulu.com/series/rick-and-morty-d76d6361-3fbf-4842-8dd7-e05520557280"
     }
   ]

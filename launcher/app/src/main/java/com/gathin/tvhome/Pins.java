@@ -27,11 +27,14 @@ final class Pins {
     }
 
     static final class Pin {
-        final String show, scene, link;
+        /** scene: the shelf's background (an episode still); card: the jump row's key art; logo: white, transparent. */
+        final String show, scene, card, logo, link;
 
-        Pin(String show, String scene, String link) {
+        Pin(String show, String scene, String card, String logo, String link) {
             this.show = show;
             this.scene = scene;
+            this.card = card;
+            this.logo = logo;
             this.link = link;
         }
     }
@@ -52,9 +55,9 @@ final class Pins {
                 JSONObject p = pins.optJSONObject(i);
                 if (p == null) continue;
                 String app = p.optString("app").trim(), show = p.optString("show").trim();
-                String scene = p.optString("scene").trim(), link = p.optString("link").trim();
+                String link = p.optString("link").trim();
                 if (app.isEmpty() || show.isEmpty()) continue;
-                out.put(app, new Pin(show, ThemeFiles.collectionImage(scene) ? scene : "", link));
+                out.put(app, new Pin(show, image(p, "scene"), image(p, "card"), image(p, "logo"), link));
             }
         } catch (Exception e) {   // unreadable or not JSON: no pins rather than half of them
             out.clear();
@@ -62,19 +65,30 @@ final class Pins {
         return out;
     }
 
+    /** A picture name from the pin, or "" when missing or not a plain image name (no paths). */
+    private static String image(JSONObject p, String key) {
+        String name = p.optString(key).trim();
+        return ThemeFiles.collectionImage(name) ? name : "";
+    }
+
     /** The pin's scene picture, decoded about SCENE_WIDTH wide; null when it has none or it is missing. */
     static Bitmap scene(Context ctx, Pin pin) {
+        return picture(ctx, pin.scene, SCENE_WIDTH);
+    }
+
+    /** A picture from scenes/, decoded about {@code width} wide (alpha kept for PNG logos); null when missing. */
+    static Bitmap picture(Context ctx, String name, int width) {
         File dir = Config.dir(ctx);
-        if (pin.scene.isEmpty() || dir == null) return null;
-        String path = new File(new File(dir, ThemeFiles.SCENES), pin.scene).getPath();
+        if (name.isEmpty() || dir == null) return null;
+        String path = new File(new File(dir, ThemeFiles.SCENES), name).getPath();
         BitmapFactory.Options o = new BitmapFactory.Options();
         o.inJustDecodeBounds = true;
         BitmapFactory.decodeFile(path, o);
         if (o.outWidth <= 0) return null;
         o.inJustDecodeBounds = false;
         o.inSampleSize = 1;   // the field starts at 0
-        while (o.outWidth / (o.inSampleSize * 2) >= SCENE_WIDTH) o.inSampleSize *= 2;
-        o.inPreferredConfig = Bitmap.Config.RGB_565;
+        while (o.outWidth / (o.inSampleSize * 2) >= width) o.inSampleSize *= 2;
+        if (!name.toLowerCase(java.util.Locale.ROOT).endsWith(".png")) o.inPreferredConfig = Bitmap.Config.RGB_565;
         return BitmapFactory.decodeFile(path, o);
     }
 
