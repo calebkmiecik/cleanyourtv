@@ -87,7 +87,7 @@ com.android.federatedcompute.services         # federated learning for the above
 com.google.android.partnersetup               # partner / RLZ install-attribution pings
 
 # Google TV setup wizard (claims HOME on Google TV 14; re-enable before a factory reset)
-# LATER, after Wi-Fi is forgotten and rejoined (it owns the network in use): com.google.android.tungsten.setupwraith
+com.google.android.tungsten.setupwraith
 
 # Google preloads
 com.google.android.play.games                 # Play Games
