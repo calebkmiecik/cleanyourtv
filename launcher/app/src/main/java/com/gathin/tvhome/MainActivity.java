@@ -752,6 +752,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             holder.addView(jumpFloor, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                     (int) (105 * density), Gravity.BOTTOM));
             setFloorColor(cfg.backgroundColor);
+            // the browser mock's header: a larger serif clock, no divider before the date
+            ((TextView) findViewById(R.id.clock)).setTextSize(TypedValue.COMPLEX_UNIT_SP, 64);
+            findViewById(R.id.clockDivider).setVisibility(View.GONE);
+            View dateColumn = (View) findViewById(R.id.date).getParent();
+            ((ViewGroup.MarginLayoutParams) dateColumn.getLayoutParams()).setMarginStart((int) (18 * density));
             jumpRow.setRingColor(focusColor);
         }
 
@@ -2047,7 +2052,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      */
     private void setUpCinematicShelf(int scrimPercent) {
         shelfScrimPercent = scrimPercent;
-        heroName.setTextSize(TypedValue.COMPLEX_UNIT_SP, 68f);
+        heroName.setTextSize(TypedValue.COMPLEX_UNIT_SP, jumpRow != null ? 56f : 68f);   // 56: the projector mock's title
         heroName.setLetterSpacing(-0.025f);
         heroMeta.setVisibility(View.INVISIBLE);   // keeps its height, so the name does not jump when it fills in
         heroDots.setVisibility(heroDotsShown ? View.VISIBLE : View.GONE);

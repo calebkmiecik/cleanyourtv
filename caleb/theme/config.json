@@ -5,7 +5,12 @@
     "com.hulu.livingroomplus",
     "com.google.android.youtube.tvunplugged",
     "com.google.android.youtube.tv",
-    "com.disney.disneyplus"
+    "com.disney.disneyplus",
+    "com.amazon.amazonvideo.livingroom",
+    "com.cbs.ott",
+    "com.dailywire.androidtv",
+    "com.bamnetworks.mobile.android.gameday.atbat",
+    "com.spotify.tv.android"
   ],
   "columns": 6,
   "single_row": true,
