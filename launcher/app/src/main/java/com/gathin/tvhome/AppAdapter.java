@@ -675,7 +675,15 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         return e.banner != null ? e.banner : e.icon;
     }
 
+    /** A fixed focus zoom (1 = none) set by Home, or 0 for the default. */
+    private float focusScaleOverride;
+
+    void setFocusScale(float scale) {
+        focusScaleOverride = scale;
+    }
+
     float focusScale() {
+        if (focusScaleOverride > 0f) return focusScaleOverride;
         return !animations ? 1f : advancedEffects ? 1.12f : 1.10f;
     }
 

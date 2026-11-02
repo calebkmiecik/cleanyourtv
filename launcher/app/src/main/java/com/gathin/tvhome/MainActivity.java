@@ -177,6 +177,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private Map<String, Pins.Pin> pins = new HashMap<>();   // pins.json, by package
     private JumpRow jumpRow;   // the pinned shows under the single row; null without pins
     private View jumpFloor;   // the fade the resting cards sink into
+    private boolean jumpActive;   // a card has focus: the rows are up
     /** Room the single row leaves under it for the jump row's label and peeking cards. */
     private static final float JUMP_ROOM_DP = 92;
 
@@ -202,6 +203,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         @Override
         public void onJumpActive(boolean active) {   // both rows slide up together; the title steps aside
+            jumpActive = active;
+            fadeTiles();
             float to = active ? -JumpRow.LIFT_DP * density : 0f;
             JumpRow.spring(grid, androidx.dynamicanimation.animation.DynamicAnimation.TRANSLATION_Y, to);
             JumpRow.spring(jumpRow.view, androidx.dynamicanimation.animation.DynamicAnimation.TRANSLATION_Y, to);
@@ -211,6 +214,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         @Override
         public void open(Intent intent) {
             MainActivity.this.open(intent);
+        }
+
+        @Override
+        public float[] dockRing() {   // where the dock's ring is, in window pixels: the card ring starts there
+            int[] at = new int[2];
+            glass.getLocationInWindow(at);
+            float inset = 6f * density;   // GlassView draws its ring this far inside its bounds
+            return new float[]{at[0] + inset, at[1] + inset, glass.getWidth() - 2 * inset, glass.getHeight() - 2 * inset};
         }
     };
     /** Softened artwork per app (HeroArt, about 5 KB each), made the first time its dock tile is focused. */
@@ -754,6 +765,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             setFloorColor(cfg.backgroundColor);
             // the browser mock's header: a larger serif clock, no divider before the date
             ((TextView) findViewById(R.id.clock)).setTextSize(TypedValue.COMPLEX_UNIT_SP, 64);
+            android.widget.TextClock date = findViewById(R.id.date);   // MONDAY NOVEMBER 2, as in the mock
+            date.setFormat12Hour("EEEE MMMM d");
+            date.setFormat24Hour("EEEE MMMM d");
+            glass.setPlainRing(true);   // a crisp ring, the tile itself stays still
+            adapter.setFocusScale(1f);
             findViewById(R.id.clockDivider).setVisibility(View.GONE);
             View dateColumn = (View) findViewById(R.id.date).getParent();
             ((ViewGroup.MarginLayoutParams) dateColumn.getLayoutParams()).setMarginStart((int) (18 * density));
@@ -996,6 +1012,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((oldF, newF) -> {
             boolean onTile = newF != null && newF.getId() == R.id.card;
             if (!onTile) hideGlass();
+            if (jumpRow != null) grid.post(this::fadeTiles);   // after onTileFocused has set lastFocused
         });
 
         packageFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
@@ -1698,6 +1715,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         dimOthers();
     }
 
+    /** The mock's tile dimming, eased rather than snapped. */
+    private void fadeTiles() {
+        for (int i = 0; i < grid.getChildCount(); i++) {
+            View item = grid.getChildAt(i);
+            item.animate().alpha(tileAlpha(grid.getChildAdapterPosition(item))).setDuration(220).start();
+        }
+    }
+
     /** While a tile is carried, every other tile is dimmed so the carried one stands out; otherwise all are full. */
     private void dimOthers() {
         for (int i = 0; i < grid.getChildCount(); i++) {
@@ -1712,6 +1737,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             return pos != RecyclerView.NO_POSITION && movingKey.equals(adapter.keyAt(pos)) ? 1f : 0.45f;
         }
         if (dockEditSlot >= 0 && pos >= 0 && pos < COLUMNS && pos != dockEditSlot) return 0.45f;
+        if (jumpRow != null) {   // the mock: the focused tile full, the rest dimmed, more while the cards are up
+            if (jumpActive) return 0.5f;
+            return pos == lastFocused && grid.hasFocus() ? 1f : 0.72f;
+        }
         return 1f;
     }
 

@@ -44,6 +44,15 @@ public class GlassView extends View {
         setLayerType(LAYER_TYPE_HARDWARE, null);
     }
 
+    /** A plain ring: the rim drawn in the exact accent colour, a little heavier (Caleb's projector look). */
+    private boolean plainRing;
+
+    void setPlainRing(boolean on) {
+        plainRing = on;
+        if (on) rim.setStrokeWidth(2.5f * density);
+        invalidate();
+    }
+
     /** Tints the rim and the outer glow; 0 restores the plain white glass. */
     void setAccent(int argb) {
         if (argb == 0) {
@@ -56,7 +65,7 @@ public class GlassView extends View {
             // The rim is the accent lifted towards white, so the edge still reads as glass, not paint.
             int r = (((glowRgb >> 16) & 0xFF) + 255 * 2) / 3, g = (((glowRgb >> 8) & 0xFF) + 255 * 2) / 3,
                     b = ((glowRgb & 0xFF) + 255 * 2) / 3;
-            rim.setColor(0xE6000000 | (r << 16) | (g << 8) | b);
+            rim.setColor(plainRing ? 0xFF000000 | glowRgb : 0xE6000000 | (r << 16) | (g << 8) | b);
         }
         invalidate();
     }

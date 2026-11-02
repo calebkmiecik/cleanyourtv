@@ -46,6 +46,9 @@ final class JumpRow {
         void onJumpUp();
 
         void open(Intent intent);
+
+        /** The dock ring's box in window pixels {x, y, w, h}: the card ring glides from there. */
+        float[] dockRing();
     }
 
     // Projector layout, in dp (the screen is 960 x 540 dp): see the browser mock, projector-research/mock.
@@ -142,6 +145,7 @@ final class JumpRow {
     private void setActive(boolean on) {
         if (active == on) return;
         active = on;
+        dimCards();
         if (!on) {
             ring.setVisibility(View.INVISIBLE);
             view.post(() -> { if (!active) view.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS); });
@@ -206,8 +210,10 @@ final class JumpRow {
             spring(v, DynamicAnimation.SCALE_X, focused ? GROW : 1f);
             spring(v, DynamicAnimation.SCALE_Y, focused ? GROW : 1f);
             if (!focused) return;
+            boolean arriving = !active;
             setActive(true);
-            moveRing(v);
+            dimCards();
+            moveRing(v, arriving);
             host.onJumpFocused(app);
         });
         card.setOnKeyListener((v, keyCode, event) -> {
@@ -237,11 +243,19 @@ final class JumpRow {
         return card;
     }
 
-    /** The ring glides to just outside the focused card, at its grown size. */
-    private void moveRing(View card) {
+    /** The mock's card dimming: the focused card full, the others 0.8 while the row is up, all 0.9 at rest. */
+    private void dimCards() {
+        for (int i = 0; i < cards.getChildCount(); i++) {
+            View c = cards.getChildAt(i);
+            c.animate().alpha(!active ? 0.9f : c.isFocused() ? 1f : 0.8f).setDuration(220).start();
+        }
+    }
+
+    /** The ring glides to just outside the focused card, at its grown size; from the dock's ring when arriving. */
+    private void moveRing(View card, boolean arriving) {
         float w = card.getWidth() * GROW + 2 * dp(RING_OUT_DP), h = card.getHeight() * GROW + 2 * dp(RING_OUT_DP);
         if (w <= 2 * dp(RING_OUT_DP)) {   // not laid out yet (first focus right after a refresh)
-            card.post(() -> { if (card.isFocused()) moveRing(card); });
+            card.post(() -> { if (card.isFocused()) moveRing(card, arriving); });
             return;
         }
         ViewGroup.LayoutParams lp = ring.getLayoutParams();
@@ -254,11 +268,19 @@ final class JumpRow {
         float cx = card.getLeft() + cards.getLeft() + ((View) cards.getParent()).getLeft() + card.getWidth() / 2f;
         float cy = card.getTop() + cards.getTop() + ((View) cards.getParent()).getTop() + card.getHeight() / 2f;
         float x = cx - w / 2f, y = cy - h / 2f;
-        if (ring.getVisibility() != View.VISIBLE) {   // arriving from the dock: appear in place, no flight across
-            ring.setX(x);
-            ring.setY(y);
+        if (arriving || ring.getVisibility() != View.VISIBLE) {
+            // start where the dock's ring is, at its size (scale about the centre), then glide down and grow
+            float[] from = host.dockRing();
+            int[] here = new int[2];
+            view.getLocationInWindow(here);
+            float fx = from[0] - here[0] + from[2] / 2f - w / 2f, fy = from[1] - here[1] + from[3] / 2f - h / 2f;
+            ring.setX(fx);
+            ring.setY(fy);
+            ring.setScaleX(from[2] / w);
+            ring.setScaleY(from[3] / h);
             ring.setVisibility(View.VISIBLE);
-            return;
+            spring(ring, DynamicAnimation.SCALE_X, 1f);
+            spring(ring, DynamicAnimation.SCALE_Y, 1f);
         }
         spring(ring, DynamicAnimation.X, x);
         spring(ring, DynamicAnimation.Y, y);
