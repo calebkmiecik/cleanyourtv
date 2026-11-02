@@ -4,22 +4,33 @@
       "app": "com.netflix.ninja",
       "show": "Seinfeld",
       "scene": "seinfeld.jpg",
-      "scene_url": "https://static.tvmaze.com/uploads/images/original_untouched/219/549578.jpg",
+      "scene_url": "https://static.tvmaze.com/uploads/images/original_untouched/244/610974.jpg",
+      "card": "seinfeld-card.jpg",
+      "card_url": "https://static.tvmaze.com/uploads/images/original_untouched/219/549578.jpg",
       "link": "http://www.netflix.com/title/70153373"
     },
     {
       "app": "com.crunchyroll.crunchyroid",
       "show": "Attack on Titan",
       "scene": "attack-on-titan.jpg",
-      "scene_url": "https://static.tvmaze.com/uploads/images/original_untouched/519/1299240.jpg",
-      "scene_crop": [1130, 100, 1920, 1080],
+      "scene_url": "https://static.tvmaze.com/uploads/images/original_untouched/117/292535.jpg",
+      "card": "attack-on-titan-card.jpg",
+      "card_url": "https://static.tvmaze.com/uploads/images/original_untouched/519/1299240.jpg",
+      "card_crop": [
+        1130,
+        100,
+        1920,
+        1080
+      ],
       "link": "https://www.crunchyroll.com/series/GR751KNZY/attack-on-titan"
     },
     {
       "app": "com.hulu.livingroomplus",
       "show": "Rick and Morty",
       "scene": "rick-and-morty.jpg",
-      "scene_url": "https://static.tvmaze.com/uploads/images/original_untouched/218/547405.jpg",
+      "scene_url": "https://static.tvmaze.com/uploads/images/original_untouched/123/308859.jpg",
+      "card": "rick-and-morty-card.jpg",
+      "card_url": "https://static.tvmaze.com/uploads/images/original_untouched/218/547405.jpg",
       "link": "https://www.hulu.com/series/rick-and-morty-d76d6361-3fbf-4842-8dd7-e05520557280"
     }
   ]

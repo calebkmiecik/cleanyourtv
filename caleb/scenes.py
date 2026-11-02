@@ -1,7 +1,8 @@
-"""Fetch the pinned shows' scene pictures into theme/scenes/, from each pin's scene_url (TVmaze).
+"""Fetch the pinned shows' pictures into theme/scenes/: each pin's scene (scene_url, the shelf's background,
+usually an episode still) and card (card_url, the jump row's key art), from TVmaze.
 
 Usage: python -I caleb/scenes.py            (then: TV_HOST=<ip> tools/theme.sh caleb/theme)
-Each picture is center-cropped to 16:9 (after an optional scene_crop [left, top, right, bottom] in the
+Each picture is center-cropped to 16:9 (after an optional scene_crop or card_crop [left, top, right, bottom] in the
 original's pixels, e.g. to cut a logo out) and saved 1280x720. The pictures are kept out of git: they are
 the shows' artwork.
 """
@@ -30,18 +31,18 @@ def main():
     out = THEME / "scenes"
     out.mkdir(exist_ok=True)
     for pin in pins:
-        name, url = pin.get("scene"), pin.get("scene_url")
-        if not name or not url:
-            print(f"skip {pin.get('show')}: no scene or scene_url")
-            continue
-        assert "/" not in name and "\\" not in name and not name.startswith("."), name
-        with urllib.request.urlopen(url, timeout=30) as r:
-            im = Image.open(io.BytesIO(r.read())).convert("RGB")
-        if pin.get("scene_crop"):
-            im = im.crop(tuple(pin["scene_crop"]))
-        crop169(im).resize((1280, 720), Image.LANCZOS).save(out / name, "JPEG", quality=82, optimize=True)
-        print(f"{name}: {pin['show']}")
-
+        # the shelf's background (scene) and the jump row's card (card), each from its own picture
+        for kind in ("scene", "card"):
+            name, url = pin.get(kind), pin.get(f"{kind}_url")
+            if not name or not url:
+                continue
+            assert "/" not in name and "\\" not in name and not name.startswith("."), name
+            with urllib.request.urlopen(url, timeout=30) as r:
+                im = Image.open(io.BytesIO(r.read())).convert("RGB")
+            if pin.get(f"{kind}_crop"):
+                im = im.crop(tuple(pin[f"{kind}_crop"]))
+            crop169(im).resize((1280, 720), Image.LANCZOS).save(out / name, "JPEG", quality=82, optimize=True)
+            print(f"{name}: {pin['show']} {kind}")
 
 if __name__ == "__main__":
     sys.exit(main())

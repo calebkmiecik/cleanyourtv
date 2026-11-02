@@ -34,5 +34,10 @@
   ],
   "stock_home_redirect": "com.google.android.apps.tv.launcherx",
   "chester_looks": true,
-  "location": "38.9536,-94.7336"
+  "location": "38.9536,-94.7336",
+  "hidden_apps": [
+    "com.xgimi.starmirror",
+    "com.android.vending",
+    "com.android.tv.settings"
+  ]
 }
