@@ -175,6 +175,28 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private float heroArtAlpha = 0.5f;
     private float heroArtTarget = 0.5f;   // the shown art's alpha: heroArtAlpha, or a pinned scene's dimmed one
     private Map<String, Pins.Pin> pins = new HashMap<>();   // pins.json, by package
+    private JumpRow jumpRow;   // the pinned shows under the single row; null without pins
+    private final JumpRow.Host jumpHost = new JumpRow.Host() {
+        @Override
+        public void onJumpFocused(String app) {   // the card's app on the shelf: its name and its scene
+            for (int i = 0; i < adapter.appCount(); i++) {
+                if (!app.equals(adapter.packageAt(i))) continue;
+                heroName.setText(adapter.labelAt(i));
+                if (heroArtAlpha > 0f) showHeroArt(i);
+                return;
+            }
+        }
+
+        @Override
+        public void onJumpUp() {
+            focusTile(lastFocused);
+        }
+
+        @Override
+        public void open(Intent intent) {
+            MainActivity.this.open(intent);
+        }
+    };
     /** Softened artwork per app (HeroArt, about 5 KB each), made the first time its dock tile is focused. */
     private final Map<String, Bitmap> heroArtCache = new HashMap<>();
     /** The app whose artwork heroArt shows, so focusing it again only fades it back in. */
@@ -705,6 +727,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         Order savedOrder = Order.load(Order.file(this));
         adapter.setSavedOrder(Order.ranks(savedOrder, dockApps), Order.docked(savedOrder, dockApps));
         grid.setAdapter(adapter);
+        if (singleRow && cinematic && !pins.isEmpty()) {
+            jumpRow = new JumpRow(this, jumpHost, pins, density);
+            ((FrameLayout) grid.getParent()).addView(jumpRow.view, jumpRow.layoutParams());
+            jumpRow.setRingColor(focusColor);
+        }
 
         // tvOS layout: push the dock row towards the bottom of the screen, leaving room for
         // rows_below_dock grid rows under it; the rest of the grid stays below until you press Down.
@@ -729,6 +756,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // A single row never shows the names under its tiles (the title above the row names the app), so the
             // 7dp gap and 22dp label item_app.xml keeps for them would only lift the row: sit it that much lower.
             if (singleRow && !cfg.alwaysShowNames) want += (int) (29 * density);
+            // The jump row sits under the single row: lift the row by its height.
+            if (jumpRow != null && jumpRow.view.getVisibility() == View.VISIBLE) want -= (int) (JumpRow.HEIGHT_DP * density);
             if (grid.getPaddingTop() != want) {
                 grid.setPadding(grid.getPaddingLeft(), want, grid.getPaddingRight(), grid.getPaddingBottom());
                 // A vertical grid parks the dock on the new padding line by scrolling (onTileFocused); a sideways
@@ -752,6 +781,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // Cold start or column count > 4: the first focus can run before the grid has its final width or
             // padding, leaving the glass at the XML design size until a key is pressed.
             grid.post(this::refitGlass);
+            if (jumpRow != null) grid.post(this::alignJumpRow);
         });
 
         // Keep the glass glued to its tile while the grid scrolls.
@@ -1093,6 +1123,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         super.onResume();
         resumed = true;
         applyLook();
+        if (jumpRow != null) jumpRow.refresh();   // an app opened since moves to the front
         // A festival that started or ended while Home was in the background: rebuild with or without it.
         if (festive != festival.active(LocalDate.now())) {
             recreate();
@@ -1980,8 +2011,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /** The shelf's text for this dock app: its name and, on the cinematic shelf, "Last opened" and the dots. */
     private void fillHero(int position, String label) {
-        Pins.Pin pin = pins.get(adapter.packageAt(position));
-        heroName.setText(pin != null ? pin.show : label);
+        heroName.setText(label);   // the app's name, also over a pinned show's scene (Caleb, 11-02)
         if (!cinematic) return;
         updateHeroMeta(position);
         updateHeroDots(position);
@@ -2441,7 +2471,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // One row: Up leaves for the top bar, Down has nowhere to go, and Left/Right walk the whole row,
             // stopping at its two ends (the default focus search scrolls the row to the next tile).
             if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return false;
-            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) return true;
+            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                if (jumpRow != null) jumpRow.focusFirst();   // the pinned shows, if any
+                return true;
+            }
             boolean forward = rtlAppGrid ? keyCode == KeyEvent.KEYCODE_DPAD_LEFT : keyCode == KeyEvent.KEYCODE_DPAD_RIGHT;
             int last = adapter.focusablePosition(count - 1);
             if (forward && position >= last) {
@@ -2771,6 +2804,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (lunar) lunarDate.setText(Lunar.today(getResources(), lunarOffset));
     }
 
+    /** Lines the jump row up with the first app tile, while the row is scrolled to its start. */
+    private void alignJumpRow() {
+        RecyclerView.ViewHolder vh = grid.findViewHolderForAdapterPosition(0);
+        if (vh == null || grid.computeHorizontalScrollOffset() != 0) return;
+        View card = vh.itemView.findViewById(R.id.card);
+        jumpRow.view.setX(grid.getLeft() + vh.itemView.getLeft() + card.getLeft());
+    }
+
     /** chester_looks: the background, clock, greeting, title and highlight take Chester's look for this minute. */
     private void applyLook() {
         if (!chesterLooks || festive) return;
@@ -2786,6 +2827,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         greetingColor = muted;
         greeting.setTextColor(muted);
         focusColor = 0xFF000000 | look[3];
+        if (jumpRow != null) jumpRow.setRingColor(focusColor);
         if (!reordering && glassAccent != focusColor) {
             glassAccent = focusColor;
             glass.setAccent(focusColor);
