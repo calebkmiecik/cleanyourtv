@@ -163,6 +163,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** config.xml cinematic_white_focus: the cinematic shelf keeps the white highlight. */
     private boolean cinematicWhiteFocus;
     private int focusColor;   // focus_color; 0 = white
+    private boolean chesterLooks;   // chester_looks
+    private double[] lookLocation;   // location, or null for Chester's fixed clock
+    private int lookBackground;   // the background applyLook last set, so the scrim is rebuilt only on change
+    private int shelfScrimPercent;   // cinematic_scrim, kept for applyLook's scrim
+    private static final int SCRIM_RGB = 0x060406;
     private ImageView heroArt;
     /** config.xml cinematic_dots: false leaves the dock position dots out of the cinematic shelf. */
     private boolean heroDotsShown = true;
@@ -433,6 +438,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private final Runnable minuteTick = new Runnable() {
         @Override
         public void run() {
+            applyLook();
             updateGreeting();
             updatePanel();
             // The pill follows the network callbacks and each return to Home; only the festive light follows the
@@ -530,6 +536,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroDotsShown = cfg.cinematicDots;
         cinematicWhiteFocus = cfg.cinematicWhiteFocus;
         focusColor = cfg.focusColor;
+        chesterLooks = cfg.chesterLooks;
+        lookLocation = ChesterLooks.parseLocation(cfg.location);
         heroArtAlpha = cfg.cinematicArt / 100f;
         if (cinematic) setUpCinematicShelf(cfg.cinematicScrim);
         // dock_title false: the name above the dock (and the cinematic lines under it) never shows; the glow
@@ -1080,6 +1088,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onResume() {
         super.onResume();
         resumed = true;
+        applyLook();
         // A festival that started or ended while Home was in the background: rebuild with or without it.
         if (festive != festival.active(LocalDate.now())) {
             recreate();
@@ -1980,6 +1989,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * scrimPercent of its strength (cinematic_scrim). cinematic_art 0 leaves the artwork out, 0 percent the scrim.
      */
     private void setUpCinematicShelf(int scrimPercent) {
+        shelfScrimPercent = scrimPercent;
         heroName.setTextSize(TypedValue.COMPLEX_UNIT_SP, 68f);
         heroName.setLetterSpacing(-0.025f);
         heroMeta.setVisibility(View.INVISIBLE);   // keeps its height, so the name does not jump when it fills in
@@ -1989,7 +1999,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroArt.forceHasOverlappingRendering(false);
         if (scrimPercent <= 0) return;   // cinematic_scrim 0: no scrim at all
         View scrim = findViewById(R.id.heroScrim);
-        Drawable shade = scrimDrawable();
+        Drawable shade = scrimDrawable(SCRIM_RGB);
         // On the bitmap's paint, not the view: a view's alpha would draw the full screen through an offscreen buffer.
         shade.setAlpha(scrimPercent * 255 / 100);
         scrim.setBackground(shade);
@@ -2000,17 +2010,17 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      * Darkens the side the shelf's text is on and the lower part of the screen, so the name, the dock and
      * the grid stay readable over the artwork. One small bitmap stretched over the screen, like the glow.
      */
-    private Drawable scrimDrawable() {
+    private Drawable scrimDrawable(int rgb) {
         int w = 480, h = 270;
         Bitmap bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bmp);
         boolean rtl = getResources().getBoolean(R.bool.rtl_menu_bar);
         Paint paint = new Paint();
         paint.setShader(new LinearGradient(rtl ? w : 0, 0, rtl ? 0 : w, 0,
-                new int[]{0xD1060406, 0x59060406, 0x00060406}, new float[]{0f, 0.42f, 0.7f}, Shader.TileMode.CLAMP));
+                new int[]{0xD1000000 | rgb, 0x59000000 | rgb, rgb}, new float[]{0f, 0.42f, 0.7f}, Shader.TileMode.CLAMP));
         canvas.drawRect(0, 0, w, h, paint);
         paint.setShader(new LinearGradient(0, 0, 0, h,
-                new int[]{0x00060406, 0x00060406, 0xDB060406, 0xFF060406}, new float[]{0f, 0.28f, 0.58f, 0.76f},
+                new int[]{rgb, rgb, 0xDB000000 | rgb, 0xFF000000 | rgb}, new float[]{0f, 0.28f, 0.58f, 0.76f},
                 Shader.TileMode.CLAMP));
         canvas.drawRect(0, 0, w, h, paint);
         BitmapDrawable scrim = new BitmapDrawable(getResources(), bmp);
@@ -2750,6 +2760,33 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         if (shamsi) shamsiDate.setText(Shamsi.today(getResources()));
         if (lunar) lunarDate.setText(Lunar.today(getResources(), lunarOffset));
+    }
+
+    /** chester_looks: the background, clock, greeting, title and highlight take Chester's look for this minute. */
+    private void applyLook() {
+        if (!chesterLooks || festive) return;
+        int[] look = ChesterLooks.resolve(java.time.ZonedDateTime.now(),
+                lookLocation == null ? Double.NaN : lookLocation[0], lookLocation == null ? Double.NaN : lookLocation[1]);
+        int bg = 0xFF000000 | look[0], fg = 0xFF000000 | look[1], muted = 0xFF000000 | look[2];
+        root.setBackgroundColor(bg);
+        ((TextView) findViewById(R.id.clock)).setTextColor(fg);
+        heroName.setTextColor(fg);
+        heroMeta.setTextColor(muted);
+        ((TextView) findViewById(R.id.ampm)).setTextColor(muted);
+        ((TextView) findViewById(R.id.date)).setTextColor(muted);
+        greetingColor = muted;
+        greeting.setTextColor(muted);
+        focusColor = 0xFF000000 | look[3];
+        if (!reordering && glassAccent != focusColor) {
+            glassAccent = focusColor;
+            glass.setAccent(focusColor);
+        }
+        if (bg != lookBackground && shelfScrimPercent > 0) {   // the shelf's scrim fades into this background
+            lookBackground = bg;
+            Drawable shade = scrimDrawable(look[0]);
+            shade.setAlpha(shelfScrimPercent * 255 / 100);
+            findViewById(R.id.heroScrim).setBackground(shade);
+        }
     }
 
     // ---- race-weekend panel (a theme's race_calendar) -----------------------------------------------
