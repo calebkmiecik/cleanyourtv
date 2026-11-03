@@ -8,6 +8,7 @@ public class RunNow extends Activity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        Wake.watchWifi(this);
         Wake.schedule(this);
         finish();
     }

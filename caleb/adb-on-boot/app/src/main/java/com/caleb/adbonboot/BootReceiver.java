@@ -23,6 +23,16 @@ public class BootReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         Context app = context.getApplicationContext();
         PendingResult result = goAsync();
+        if (Wake.ACTION_WIFI.equals(intent.getAction())) {   // Wi-Fi (re)connected: debugging may have gone off with it
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {   // let the connection settle first
+                if (android.provider.Settings.Global.getInt(app.getContentResolver(), Wake.KEY, 0) == 0 && Wake.turnOn(app)) {
+                    Log.i(Wake.TAG, "Wi-Fi back; switched wireless debugging on");
+                }
+                result.finish();
+            }, 3_000);
+            return;
+        }
+        Wake.watchWifi(app);   // a start or an update of this app: watch Wi-Fi from now on
         ConnectivityManager cm = app.getSystemService(ConnectivityManager.class);
         Handler main = new Handler(Looper.getMainLooper());
         ConnectivityManager.NetworkCallback[] cb = new ConnectivityManager.NetworkCallback[1];
