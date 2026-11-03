@@ -3072,17 +3072,26 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     /**
      * XGIMI's own tools (MoGo 4, tested 11-02 from adb): its screens and services are exported with no permission.
-     * Auto focus itself is not reachable from an app (only the system's own code calls it), so "auto fit" runs
-     * XGIMI's auto keystone (the window service's type 10).
+     * Auto fit is not: the window service's auto keystone (type 10) is a dead China-firmware path that only plays a
+     * Mandarin prompt, and the real one lives in XGIMI's hardware service, which answers shell only.
      */
     private void runProjectorTool(String id) {
         Intent i;
         boolean service = true;
         switch (id) {
-            case "auto":
-                i = new Intent("com.xgimi.ststemui.action.test").setClassName("com.xgimi.windowsystem",
-                        "com.xgimi.windowsystem.WondowService").putExtra("type", 10);
-                break;
+            case "auto":   // XGIMI's own auto keystone, which focuses after; only shell may call it (LocalAdb)
+                new Thread(() -> {
+                    try {
+                        String out = LocalAdb.shell(this, "service call xgimi.hardware.gmpf.IProjectorFocusManager/default 27");
+                        android.util.Log.i("ProjectorDial", "auto fit: " + out.trim());
+                    } catch (java.io.IOException e) {
+                        android.util.Log.w("ProjectorDial", "auto fit failed", e);
+                        runOnUiThread(() -> Toast.makeText(this,
+                                "Auto fit needs debugging allowed for Home. Try again and pick Always allow.",
+                                Toast.LENGTH_LONG).show());
+                    }
+                }, "auto-fit").start();
+                return;
             case "focus":   // our sharp pattern underneath, XGIMI's manual focus control on top
                 focusPattern.show();
                 i = new Intent("com.xgimi.ststemui.action.test").setClassName("com.xgimi.windowsystem",
