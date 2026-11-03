@@ -175,6 +175,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private float heroArtAlpha = 0.5f;
     private float heroArtTarget = 0.5f;   // the shown art's alpha: heroArtAlpha, or a pinned scene's dimmed one
     private Map<String, Pins.Pin> pins = new HashMap<>();   // pins.json, by package
+    private Map<String, String> walls = new HashMap<>();   // pins.json walls: poster wall per package
     private JumpRow jumpRow;   // the pinned shows under the single row; null without pins
     private View jumpFloor;   // the fade the resting cards sink into
     private boolean jumpActive;   // a card has focus: the rows are up
@@ -191,7 +192,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             for (int i = 0; i < adapter.appCount(); i++) {
                 if (!app.equals(adapter.packageAt(i))) continue;
                 heroName.setText(adapter.labelAt(i));
-                if (heroArtAlpha > 0f) showHeroArt(i);
+                if (heroArtAlpha > 0f) showSceneFor(app);   // a card shows its show, not the app's wall
                 return;
             }
         }
@@ -225,7 +226,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
     };
     /** Softened artwork per app (HeroArt, about 5 KB each), made the first time its dock tile is focused. */
-    private final Map<String, Bitmap> heroArtCache = new HashMap<>();
+    // A few pictures at most: poster walls are 1600 px wide, too big to keep one per app on this projector.
+    private final Map<String, Bitmap> heroArtCache = new java.util.LinkedHashMap<String, Bitmap>(8, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, Bitmap> eldest) {
+            return size() > 4;
+        }
+    };
     /** The app whose artwork heroArt shows, so focusing it again only fades it back in. */
     private String heroArtKey;
     /** The focus glow's colour while the cinematic shelf tints it, 0 for plain white glass. */
@@ -592,6 +599,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroArtAlpha = cfg.cinematicArt / 100f;
         heroArtTarget = heroArtAlpha;
         pins = Pins.load(this);
+        walls = Pins.walls(this);
         if (cinematic) setUpCinematicShelf(cfg.cinematicScrim);
         // dock_title false: the name above the dock (and the cinematic lines under it) never shows; the glow
         // still follows the dock.
@@ -2123,31 +2131,82 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void showHeroArt(int position) {
         String key = adapter.keyAt(position);
         if (key == null) return;
+        if (pins.isEmpty() && walls.isEmpty()) {   // the launcher's own shelf: the app's softened banner
+            showArt(key, () -> HeroArt.from(adapter.artworkAt(position)), false);
+            return;
+        }
+        // Caleb's projector look: the app's poster wall, drifting; without one, its pinned show's scene; else plain.
+        String pkg = adapter.packageAt(position), wall = walls.get(pkg);
+        if (wall != null) {
+            showArt("wall:" + pkg, () -> Pins.picture(this, wall, WALL_WIDTH), true);
+            return;
+        }
+        Pins.Pin pin = pins.get(pkg);
+        showArt("scene:" + pkg, () -> pin == null ? null : Pins.scene(this, pin), false);
+    }
+
+    /** A card's show: its scene behind the shelf (the clip fades in over it later). */
+    private void showSceneFor(String app) {
+        Pins.Pin pin = pins.get(app);
+        showArt("scene:" + app, () -> pin == null ? null : Pins.scene(this, pin), false);
+    }
+
+    private static final int WALL_WIDTH = 1600;
+    private static final float WALL_ALPHA = 0.38f;   // walls are busy: dimmer than a single scene
+    private android.animation.ObjectAnimator wallDrift;
+
+    /** One way onto the shelf for every picture: crossfade to it, dimmed by its brightness, a wall drifting. */
+    private void showArt(String key, java.util.function.Supplier<Bitmap> load, boolean wall) {
         heroArt.animate().cancel();
         if (key.equals(heroArtKey)) {
             fadeHeroArt(420);
             return;
         }
-        // With pins: a pinned show's scene, dimmed by its brightness, and a plain wall for the other apps.
-        Pins.Pin pin = pins.get(adapter.packageAt(position));
         Bitmap art = heroArtCache.get(key);
-        if (art == null) {
-            art = pins.isEmpty() ? HeroArt.from(adapter.artworkAt(position)) : pin != null ? Pins.scene(this, pin) : null;
-            if (art != null) heroArtCache.put(key, art);
+        if (art == null && !heroArtCache.containsKey(key)) {
+            art = load.get();
+            heroArtCache.put(key, art);
         }
         heroArtKey = key;
-        heroArtTarget = pins.isEmpty() ? heroArtAlpha : art == null ? 0f : Pins.dim(Pins.meanLuma(art), heroArtAlpha);
-        heroArt.setScaleType(pins.isEmpty() ? ImageView.ScaleType.FIT_XY : ImageView.ScaleType.CENTER_CROP);
+        boolean own = pins.isEmpty() && walls.isEmpty();
+        heroArtTarget = own ? heroArtAlpha : art == null ? 0f : wall ? WALL_ALPHA : Pins.dim(Pins.meanLuma(art), heroArtAlpha);
+        heroArt.setScaleType(own ? ImageView.ScaleType.FIT_XY : ImageView.ScaleType.CENTER_CROP);
         final Bitmap next = art;
-        if (!animations || reducedMotion || heroArt.getAlpha() == 0f) {
+        final boolean drift = wall;
+        Runnable swap = () -> {
             heroArt.setImageBitmap(next);
+            setDrift(drift);
+        };
+        if (!animations || reducedMotion || heroArt.getAlpha() == 0f) {
+            swap.run();
             fadeHeroArt(600);
             return;
         }
         heroArt.animate().alpha(0f).setDuration(140).withEndAction(() -> {
-            heroArt.setImageBitmap(next);
+            swap.run();
             heroArt.animate().alpha(heroArtTarget).setDuration(420).start();
         }).start();
+    }
+
+    /** A poster wall drifts slowly corner to corner (zoomed a little so its edges never show); anything else sits still. */
+    private void setDrift(boolean on) {
+        if (wallDrift != null) wallDrift.cancel();
+        wallDrift = null;
+        heroArt.setTranslationX(0f);
+        heroArt.setTranslationY(0f);
+        float zoom = on ? 1.16f : 1f;
+        heroArt.setScaleX(zoom);
+        heroArt.setScaleY(zoom);
+        if (!on || !animations || reducedMotion) return;
+        float dx = heroArt.getWidth() * 0.06f, dy = heroArt.getHeight() * 0.06f;
+        wallDrift = android.animation.ObjectAnimator.ofPropertyValuesHolder(heroArt,
+                android.animation.PropertyValuesHolder.ofFloat(View.TRANSLATION_X, -dx, dx),
+                android.animation.PropertyValuesHolder.ofFloat(View.TRANSLATION_Y, -dy, dy));
+        wallDrift.setDuration(70_000);
+        wallDrift.setRepeatMode(android.animation.ValueAnimator.REVERSE);
+        wallDrift.setRepeatCount(android.animation.ValueAnimator.INFINITE);
+        wallDrift.setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator());
+        wallDrift.start();
     }
 
     private void fadeHeroArt(int ms) {

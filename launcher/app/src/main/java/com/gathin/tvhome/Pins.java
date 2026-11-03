@@ -65,6 +65,26 @@ final class Pins {
         return out;
     }
 
+    /** The poster walls: pins.json "walls": {package: picture in scenes/}; empty when there are none. */
+    static Map<String, String> walls(Context ctx) {
+        Map<String, String> out = new LinkedHashMap<>();
+        File dir = Config.dir(ctx);
+        File f = dir == null ? null : new File(dir, ThemeFiles.PINS);
+        if (f == null || !f.isFile() || f.length() > MAX_BYTES) return out;
+        try {
+            JSONObject walls = new JSONObject(new String(Files.readAllBytes(f.toPath()), StandardCharsets.UTF_8))
+                    .optJSONObject("walls");
+            if (walls == null) return out;
+            for (java.util.Iterator<String> it = walls.keys(); it.hasNext(); ) {
+                String app = it.next(), name = walls.optString(app).trim();
+                if (ThemeFiles.collectionImage(name)) out.put(app, name);
+            }
+        } catch (Exception e) {
+            out.clear();
+        }
+        return out;
+    }
+
     /** A picture name from the pin, or "" when missing or not a plain image name (no paths). */
     private static String image(JSONObject p, String key) {
         String name = p.optString(key).trim();

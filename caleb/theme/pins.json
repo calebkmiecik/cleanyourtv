@@ -31,7 +31,7 @@
       ],
       "logo": "attack-on-titan-logo.png",
       "logo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Attack_on_Titan_%28international_anglophone%29_logo.svg/960px-Attack_on_Titan_%28international_anglophone%29_logo.svg.png",
-      "link": "https://www.crunchyroll.com/series/GR751KNZY/attack-on-titan"
+      "link": "crunchyroll://series/GR751KNZY"
     },
     {
       "app": "com.hulu.livingroomplus",
@@ -49,5 +49,18 @@
       ],
       "link": "https://www.hulu.com/series/rick-and-morty-d76d6361-3fbf-4842-8dd7-e05520557280"
     }
-  ]
+  ],
+  "walls": {
+    "com.netflix.ninja": "wall-netflix.jpg",
+    "com.crunchyroll.crunchyroid": "wall-crunchyroll.jpg",
+    "com.hulu.livingroomplus": "wall-hulu.jpg",
+    "com.google.android.youtube.tvunplugged": "wall-youtubetv.jpg",
+    "com.google.android.youtube.tv": "wall-youtube.jpg",
+    "com.disney.disneyplus": "wall-disney.jpg",
+    "com.amazon.amazonvideo.livingroom": "wall-prime.jpg",
+    "com.cbs.ott": "wall-paramount.jpg",
+    "com.dailywire.androidtv": "wall-dailywire.jpg",
+    "com.bamnetworks.mobile.android.gameday.atbat": "wall-mlb.jpg",
+    "com.spotify.tv.android": "wall-spotify.jpg"
+  }
 }
