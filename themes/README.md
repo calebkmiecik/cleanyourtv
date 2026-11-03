@@ -142,6 +142,7 @@ A new key needs one there in the same pull request.
 | `focus_color` | `#RRGGBB` | Colour of the focus highlight wherever the app's own colour does not tint it (with `cinematic_white_focus`, on the dock too); white if not set |
 | `chester_looks` | bool | Home's background, clock, greeting, title and highlight follow Chester's day-and-night looks (harbor morning, study day, workplace evening, harbor night, parlor on weekends, holiday skins), fading over 30 minutes at each change; ported from Chester's shared/theme (`false` by default) |
 | `location` | `"lat,lng"` | Where sunrise and sunset are computed for `chester_looks`, e.g. `"38.9536,-94.7336"`; empty uses a fixed clock (sunrise 07:00, golden hour 17:30, sunset 18:30) |
+| `projector_bar` | bool | XGIMI projectors: the top bar becomes projector, sleep and settings, icons only with the label on focus. The projector button opens a dial of XGIMI's own tools (auto keystone, focus, zoom, projection type, keystone, shift); sleep cycles XGIMI's sleep timer through 30, 60 and 90 minutes (`false` by default) |
 | `sky_intensity` | 0 to 100 | Time-of-day backdrop: a dark gradient that follows the clock, 0 hides it (default) |
 | `wallpaper` | bool | Show the theme's picture, `wallpaper.jpg` or its `wallpapers/` collection (`true`), or draw neither (`false`) |
 | `wallpaper_rotation_minutes` | 0 to 1440 | Rotate images in the theme's `wallpapers/` folder at this interval; 0 keeps the single-image behaviour. A negative or non-numeric value is ignored, and 0 means "no rotation", not "every minute" |

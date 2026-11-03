@@ -499,6 +499,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         @Override
         public void run() {
             applyLook();
+            if (projectorBar != null) projectorBar.refreshSleep();
             updateGreeting();
             updatePanel();
             // The pill follows the network callbacks and each return to Home; only the festive light follows the
@@ -1024,6 +1025,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             }
         }
         if (festive) applyFestiveSkin((TextView) btnInputs, (TextView) btnSettings);
+        if (cfg.projectorBar) setUpProjectorBar();
 
         // Hide the glass when focus leaves the tiles.
         getWindow().getDecorView().getViewTreeObserver().addOnGlobalFocusChangeListener((oldF, newF) -> {
@@ -1184,6 +1186,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         super.onResume();
         resumed = true;
         applyLook();
+        if (projectorBar != null) projectorBar.refreshSleep();
         if (jumpRow != null) jumpRow.refresh();   // an app opened since moves to the front
         // A festival that started or ended while Home was in the background: rebuild with or without it.
         if (festive != festival.active(LocalDate.now())) {
@@ -1521,6 +1524,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
      */
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        if (focusPattern != null && focusPattern.getVisibility() == View.VISIBLE && focusPattern.key(event)) return true;
+        if (dial != null && dial.isOpen() && dial.key(event)) return true;
         // Vendor keys (TCL Netflix button, 4062) never reach the key services, only the focused window, so their
         // "hold:" entries run here too or nowhere. Only while resumed: onPause releases Home's holds, and a DOWN
         // taken after that would arm one nothing releases.
@@ -2599,7 +2604,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (singleRow) {
             // One row: Up leaves for the top bar, Down has nowhere to go, and Left/Right walk the whole row,
             // stopping at its two ends (the default focus search scrolls the row to the next tile).
-            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) return false;
+            if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                if (projectorBar == null) return false;
+                projectorBar.focus();
+                return true;
+            }
             if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
                 if (jumpRow != null) jumpRow.focusFirst();   // the pinned shows, if any
                 return true;
@@ -3021,6 +3030,93 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     }
 
     /** chester_looks: the background, clock, greeting, title and highlight take Chester's look for this minute. */
+    // ---- the projector bar and dial (projector_bar) --------------------------------------------------
+    private ProjectorBar projectorBar;
+    private ProjectorDial dial;
+    private ProjectorDial.Pattern focusPattern;
+
+    private void setUpProjectorBar() {
+        showInputsPill = false;   // the bar replaces Inputs, Wi-Fi and Settings
+        btnInputs.setVisibility(View.GONE);
+        projectorBar = new ProjectorBar(this, findViewById(R.id.topButtons), new ProjectorBar.Host() {
+            @Override
+            public void openProjectorDial() {
+                dial.open();
+            }
+
+            @Override
+            public void openSettings() {
+                open(systemIntent(Settings.ACTION_SETTINGS));
+            }
+
+            @Override
+            public void barDown() {
+                focusTile(lastFocused);
+            }
+        }, density);
+        dial = new ProjectorDial(this, new ProjectorDial.Host() {
+            @Override
+            public void runDialTool(String id) {
+                runProjectorTool(id);
+            }
+
+            @Override
+            public void dialClosed() {
+                projectorBar.projector.requestFocus();
+            }
+        });
+        focusPattern = new ProjectorDial.Pattern(this, () -> projectorBar.projector.requestFocus());
+        root.addView(dial, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        root.addView(focusPattern, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    }
+
+    /**
+     * XGIMI's own tools (MoGo 4, tested 11-02 from adb): its screens and services are exported with no permission.
+     * Auto focus itself is not reachable from an app (only the system's own code calls it), so "auto fit" runs
+     * XGIMI's auto keystone (the window service's type 10).
+     */
+    private void runProjectorTool(String id) {
+        Intent i;
+        boolean service = true;
+        switch (id) {
+            case "auto":
+                i = new Intent("com.xgimi.ststemui.action.test").setClassName("com.xgimi.windowsystem",
+                        "com.xgimi.windowsystem.WondowService").putExtra("type", 10);
+                break;
+            case "focus":   // our sharp pattern underneath, XGIMI's manual focus control on top
+                focusPattern.show();
+                i = new Intent("com.xgimi.ststemui.action.test").setClassName("com.xgimi.windowsystem",
+                        "com.xgimi.windowsystem.WondowService").putExtra("type", 7);
+                break;
+            case "zoom":
+                i = new Intent("com.xgimi.misckey.SHOW").setClassName("com.xgimi.misckey",
+                        "com.xgimi.misckey.component.MiscKeyService").putExtra("type", 12251);
+                break;
+            case "rotation":   // projection type sits in XGIMI's projector panel; its own screen is not exported
+                i = new Intent().setClassName("com.xgimi.misckey", "com.xgimi.misckey.activity.GtvProjectorActivity");
+                service = false;
+                break;
+            case "keystone":
+                i = new Intent().setClassName("com.xgimi.misckey", "com.xgimi.keystone.activity.KeystoneActivity");
+                service = false;
+                break;
+            case "shift":
+                i = new Intent().setClassName("com.xgimi.windowsystem",
+                        "com.xgimi.keystone.gtvsettings.activity.PictureDisplacementActivity");
+                service = false;
+                break;
+            default:
+                return;
+        }
+        try {
+            if (service) startService(i);
+            else startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        } catch (RuntimeException e) {   // not an XGIMI projector, or its firmware moved things
+            if (focusPattern.getVisibility() == View.VISIBLE) focusPattern.hide();
+            Toast.makeText(this, "This projector has no " + id + " tool here", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void applyLook() {
         if (!chesterLooks || festive) return;
         int[] look = ChesterLooks.resolve(java.time.ZonedDateTime.now(),
@@ -3036,6 +3132,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         greeting.setTextColor(muted);
         focusColor = 0xFF000000 | look[3];
         if (jumpRow != null) jumpRow.setRingColor(focusColor);
+        if (projectorBar != null) {
+            projectorBar.setColors(fg, muted, focusColor);
+            dial.setColors(bg, fg, muted, focusColor);
+        }
         if (jumpFloor != null) setFloorColor(bg);
         if (!reordering && glassAccent != focusColor) {
             glassAccent = focusColor;
