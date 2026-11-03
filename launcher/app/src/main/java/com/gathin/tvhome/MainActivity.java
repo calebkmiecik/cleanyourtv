@@ -907,6 +907,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         for (SpringAnimation s : new SpringAnimation[]{springX, springY}) {
             if (reducedMotion) {
                 Motion.reduce(s);
+            } else if (jumpRow != null) {
+                // Caleb's projector look: the same spring as the cards' ring and the mock (0.38 s, no swing).
+                s.setSpring(new SpringForce().setStiffness(JumpRow.STIFFNESS).setDampingRatio(1f));
             } else if (!focusOvershoot) {
                 // Critically damped: glides straight onto the tile without swinging past it.
                 s.setSpring(new SpringForce().setStiffness(advancedEffects ? 520f : 440f).setDampingRatio(1f));
