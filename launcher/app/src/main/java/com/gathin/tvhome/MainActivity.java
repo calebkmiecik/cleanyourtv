@@ -791,8 +791,28 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // the mock's row: the first tile at x 128 px and 256 px columns (6 x 128dp of the page's 848dp)
             grid.setPaddingRelative(0, grid.getPaddingTop(), Math.round(80 * density), grid.getPaddingBottom());
             findViewById(R.id.clockDivider).setVisibility(View.GONE);
-            View dateColumn = (View) findViewById(R.id.date).getParent();
-            ((ViewGroup.MarginLayoutParams) dateColumn.getLayoutParams()).setMarginStart((int) (18 * density));
+            LinearLayout dateColumn = (LinearLayout) findViewById(R.id.date).getParent();
+            LinearLayout.LayoutParams dlp = (LinearLayout.LayoutParams) dateColumn.getLayoutParams();
+            dlp.setMarginStart((int) (18 * density));
+            // PM and the date sit on the clock's baseline, as the mock's flex row (align-items: baseline), not at the
+            // bottom of the row with their own margins, which left the date 16 px below PM.
+            dlp.gravity = -1;   // unset: LinearLayout then aligns baselines (NO_GRAVITY would not)
+            dlp.bottomMargin = 0;
+            dateColumn.setBaselineAlignedChildIndex(dateColumn.indexOfChild(date));
+            TextView ampm = findViewById(R.id.ampm);
+            LinearLayout.LayoutParams alp = (LinearLayout.LayoutParams) ampm.getLayoutParams();
+            alp.gravity = -1;
+            alp.bottomMargin = 0;
+            alp.setMarginStart((int) (11 * density));   // the mock's 22 px gap
+            ampm.setLetterSpacing(0.1f);
+            date.setLetterSpacing(0.18f);
+            greeting.setLetterSpacing(0.25f);
+            // the mock's spots: greeting at (128, 84) px, clock at (120, 120); the header lays them out 32 px higher
+            View leftBlock = findViewById(R.id.leftBlock);
+            leftBlock.setTranslationX(6 * density);
+            ((ViewGroup.MarginLayoutParams) greeting.getLayoutParams()).setMarginStart(0);   // greeting and clock glyphs start as in the mock
+            leftBlock.setTranslationY(16 * density);
+            ((View) findViewById(R.id.clock).getParent()).setTranslationY(2.5f * density);
             jumpRow.setRingColor(focusColor);
         }
 
