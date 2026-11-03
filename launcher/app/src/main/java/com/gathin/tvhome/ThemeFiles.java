@@ -28,7 +28,7 @@ final class ThemeFiles {
                 && (collectionImage(segments.get(1)) || WallpaperCaptions.FILE_NAME.equals(segments.get(1)))) {
             return WALLPAPERS + "/" + segments.get(1);
         }
-        if (segments.size() == 2 && SCENES.equals(segments.get(0)) && collectionImage(segments.get(1))) {
+        if (segments.size() == 2 && SCENES.equals(segments.get(0)) && (collectionImage(segments.get(1)) || clip(segments.get(1)))) {
             return SCENES + "/" + segments.get(1);
         }
         return null;
@@ -38,6 +38,13 @@ final class ThemeFiles {
     static boolean isCollection(List<String> segments) {
         return segments != null && segments.size() == 1
                 && (WALLPAPERS.equals(segments.get(0)) || SCENES.equals(segments.get(0)));
+    }
+
+    private static final Pattern CLIP = Pattern.compile("[A-Za-z0-9_.-]+\\.mp4", Pattern.CASE_INSENSITIVE);
+
+    /** A pinned show's silent clip in scenes/ (Pins). */
+    static boolean clip(String name) {
+        return name != null && !name.startsWith(".") && !name.contains("..") && CLIP.matcher(name).matches();
     }
 
     static boolean collectionImage(String name) {

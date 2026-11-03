@@ -29,6 +29,8 @@ final class Pins {
     static final class Pin {
         /** scene: the shelf's background (an episode still); card: the jump row's key art; logo: white, transparent. */
         final String show, scene, card, logo, link;
+        /** A silent clip (scenes/<name>.mp4) that fades in behind the card; "" for none. */
+        String clip = "";
 
         Pin(String show, String scene, String card, String logo, String link) {
             this.show = show;
@@ -57,7 +59,10 @@ final class Pins {
                 String app = p.optString("app").trim(), show = p.optString("show").trim();
                 String link = p.optString("link").trim();
                 if (app.isEmpty() || show.isEmpty()) continue;
-                out.put(app, new Pin(show, image(p, "scene"), image(p, "card"), image(p, "logo"), link));
+                Pin pin = new Pin(show, image(p, "scene"), image(p, "card"), image(p, "logo"), link);
+                String clip = p.optString("clip").trim();
+                if (ThemeFiles.clip(clip)) pin.clip = clip;
+                out.put(app, pin);
             }
         } catch (Exception e) {   // unreadable or not JSON: no pins rather than half of them
             out.clear();
@@ -89,6 +94,20 @@ final class Pins {
     private static String image(JSONObject p, String key) {
         String name = p.optString(key).trim();
         return ThemeFiles.collectionImage(name) ? name : "";
+    }
+
+    /** True when any pin names a clip. */
+    static boolean hasClips(Context ctx) {
+        for (Pin p : load(ctx).values()) if (!p.clip.isEmpty()) return true;
+        return false;
+    }
+
+    /** The pin's clip file, or null when it has none or it is missing. */
+    static File clip(Context ctx, Pin pin) {
+        File dir = Config.dir(ctx);
+        if (pin.clip.isEmpty() || dir == null) return null;
+        File f = new File(new File(dir, ThemeFiles.SCENES), pin.clip);
+        return f.isFile() ? f : null;
     }
 
     /** The pin's scene picture, decoded about SCENE_WIDTH wide; null when it has none or it is missing. */

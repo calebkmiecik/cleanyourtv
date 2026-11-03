@@ -113,7 +113,7 @@ del() { echo "rm -f $DIR/$1 2>/dev/null; content delete --uri $URI/$1 2>/dev/nul
 CLEAR_WALLPAPERS="rm -f $DIR/wallpapers/*.[jJ][pP][gG] $DIR/wallpapers/*.[jJ][pP][eE][gG] $DIR/wallpapers/*.[pP][nN][gG] $DIR/wallpapers/*.[wW][eE][bB][pP] 2>/dev/null; content delete --uri $URI/wallpapers 2>/dev/null"
 
 # Pinned shows and their scene pictures (Pins.java): emptied before a push writes the theme's own, and on --reset.
-CLEAR_SCENES="rm -f $DIR/scenes/*.[jJ][pP][gG] $DIR/scenes/*.[jJ][pP][eE][gG] $DIR/scenes/*.[pP][nN][gG] $DIR/scenes/*.[wW][eE][bB][pP] 2>/dev/null; content delete --uri $URI/scenes 2>/dev/null"
+CLEAR_SCENES="rm -f $DIR/scenes/*.[jJ][pP][gG] $DIR/scenes/*.[jJ][pP][eE][gG] $DIR/scenes/*.[pP][nN][gG] $DIR/scenes/*.[wW][eE][bB][pP] $DIR/scenes/*.[mM][pP]4 2>/dev/null; content delete --uri $URI/scenes 2>/dev/null"
 
 if [ "${1:-}" = --reset ]; then
   tv "mkdir -p $DIR 2>/dev/null; $(del config.json); $(del wallpaper.jpg); $(del wallpapers/captions.txt); $CLEAR_WALLPAPERS; $(del pins.json); $CLEAR_SCENES; printf '%s' '$REVISION' > $TMP-theme_revision; $(put theme_revision)" >/dev/null
@@ -177,7 +177,7 @@ if [ -d "$THEME/scenes" ]; then
   for IMAGE in "$THEME"/scenes/*; do
     [ -f "$IMAGE" ] || continue
     case "$IMAGE" in
-      *.[jJ][pP][gG]|*.[jJ][pP][eE][gG]|*.[pP][nN][gG]|*.[wW][eE][bB][pP])
+      *.[jJ][pP][gG]|*.[jJ][pP][eE][gG]|*.[pP][nN][gG]|*.[wW][eE][bB][pP]|*.[mM][pP]4)
         NAME=$(basename "$IMAGE")
         if [[ ! "$NAME" =~ ^[A-Za-z0-9_.-]+$ || "$NAME" == *..* ]]; then
           echo "unsupported scene filename: $NAME (letters, digits, '.', '_' and '-', no '..'). Nothing was sent to the TV." >&2

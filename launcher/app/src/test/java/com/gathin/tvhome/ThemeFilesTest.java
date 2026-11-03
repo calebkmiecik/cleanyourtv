@@ -52,6 +52,13 @@ public class ThemeFilesTest {
         assertTrue(ThemeFiles.isCollection(Collections.singletonList("scenes")));
     }
 
+    @Test public void pinnedClipsAreAllowedInScenesOnly() {
+        assertEquals("scenes/seinfeld.mp4", ThemeFiles.path(Arrays.asList("scenes", "seinfeld.mp4")));
+        assertNull(ThemeFiles.path(Arrays.asList("wallpapers", "seinfeld.mp4")));
+        assertNull(ThemeFiles.path(Arrays.asList("scenes", "..mp4")));
+        assertFalse(ThemeFiles.clip("a b.mp4"));
+    }
+
     @Test public void onlyTheBareFolderIsTheCollection() {
         assertTrue(ThemeFiles.isCollection(Collections.singletonList("wallpapers")));
         assertFalse(ThemeFiles.isCollection(Arrays.asList("wallpapers", "dusk.jpg")));

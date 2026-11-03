@@ -14,7 +14,8 @@
         9,
         34
       ],
-      "link": "http://www.netflix.com/title/70153373"
+      "link": "http://www.netflix.com/title/70153373",
+      "clip": "seinfeld.mp4"
     },
     {
       "app": "com.crunchyroll.crunchyroid",
@@ -31,7 +32,8 @@
       ],
       "logo": "attack-on-titan-logo.png",
       "logo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Attack_on_Titan_%28international_anglophone%29_logo.svg/960px-Attack_on_Titan_%28international_anglophone%29_logo.svg.png",
-      "link": "crunchyroll://series/GR751KNZY"
+      "link": "crunchyroll://series/GR751KNZY",
+      "clip": "attack-on-titan.mp4"
     },
     {
       "app": "com.hulu.livingroomplus",
@@ -47,7 +49,8 @@
         180,
         202
       ],
-      "link": "https://www.hulu.com/series/rick-and-morty-d76d6361-3fbf-4842-8dd7-e05520557280"
+      "link": "https://www.hulu.com/series/rick-and-morty-d76d6361-3fbf-4842-8dd7-e05520557280",
+      "clip": "rick-and-morty.mp4"
     }
   ],
   "walls": {

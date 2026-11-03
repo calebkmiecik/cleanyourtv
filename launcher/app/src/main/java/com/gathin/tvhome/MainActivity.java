@@ -192,6 +192,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             for (int i = 0; i < adapter.appCount(); i++) {
                 if (!app.equals(adapter.packageAt(i))) continue;
                 heroName.setText(adapter.labelAt(i));
+                scheduleClip(app);
                 if (heroArtAlpha > 0f) showSceneFor(app);   // a card shows its show, not the app's wall
                 return;
             }
@@ -205,6 +206,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         @Override
         public void onJumpActive(boolean active) {   // both rows slide up together; the title steps aside
             jumpActive = active;
+            if (!active) stopClip();
             fadeTiles();
             float to = active ? -JumpRow.LIFT_DP * density : 0f;
             JumpRow.spring(grid, androidx.dynamicanimation.animation.DynamicAnimation.TRANSLATION_Y, to);
@@ -589,6 +591,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         heroMeta = findViewById(R.id.heroMeta);
         heroDots = findViewById(R.id.heroDots);
         heroArt = findViewById(R.id.heroArt);
+        if (Pins.hasClips(this)) {   // a pinned show's clip plays here, just above the still
+            clipView = new android.view.TextureView(this);
+            clipView.setAlpha(0f);
+            ViewGroup artParent = (ViewGroup) heroArt.getParent();
+            artParent.addView(clipView, artParent.indexOfChild(heroArt) + 1, new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        }
         cinematic = cfg.cinematicHome;
         glowStyle = cfg.glowStyle;
         heroDotsShown = cfg.cinematicDots;
@@ -1391,6 +1400,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     @Override
     protected void onPause() {
         super.onPause();
+        stopClip();
         resumed = false;
         // No UP reaches a paused Home, so a vendor-key hold it saw go down would still open its app later.
         // Only Home's own share is dropped: a key service that saw the same DOWN keeps its hold.
@@ -2929,6 +2939,77 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         jumpFloor.setBackground(new android.graphics.drawable.GradientDrawable(
                 android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
                 new int[]{rgb, 0xE6000000 | rgb, 0xFF000000 | rgb}));
+    }
+
+
+    // ---- clips: a pinned show's silent montage fades in behind its card after a short rest -----------
+    private static final long CLIP_DELAY_MS = 1500;
+    private android.view.TextureView clipView;
+    private android.media.MediaPlayer clipPlayer;
+    private String clipApp;
+    private final Runnable clipStart = this::startClip;
+
+    /** A card took focus: stop any clip, then start this show's after CLIP_DELAY_MS of rest. */
+    private void scheduleClip(String app) {
+        handler.removeCallbacks(clipStart);
+        if (app != null && app.equals(clipApp) && clipPlayer != null) return;   // same show: keep playing
+        stopClip();
+        Pins.Pin pin = app == null ? null : pins.get(app);
+        if (pin == null || pin.clip.isEmpty() || !animations) return;
+        clipApp = app;
+        handler.postDelayed(clipStart, CLIP_DELAY_MS);
+    }
+
+    private void startClip() {
+        Pins.Pin pin = clipApp == null ? null : pins.get(clipApp);
+        java.io.File file = pin == null ? null : Pins.clip(this, pin);
+        if (file == null || clipView == null || !clipView.isAvailable()) return;
+        try {
+            android.media.MediaPlayer mp = new android.media.MediaPlayer();
+            clipPlayer = mp;
+            mp.setDataSource(file.getPath());
+            mp.setSurface(new android.view.Surface(clipView.getSurfaceTexture()));
+            mp.setLooping(true);
+            mp.setVolume(0f, 0f);
+            mp.setOnPreparedListener(p -> {
+                if (p != clipPlayer) return;
+                p.start();
+                // the clip takes the still's place, at the still's (brightness-dimmed) strength
+                clipView.animate().alpha(Math.max(heroArtTarget, 0.3f)).setDuration(900).start();
+                heroArt.animate().alpha(0f).setDuration(900).start();
+            });
+            mp.setOnErrorListener((p, what, extra) -> {
+                stopClip();
+                return true;
+            });
+            mp.prepareAsync();
+        } catch (java.io.IOException | RuntimeException e) {
+            stopClip();
+        }
+    }
+
+    /** Fades the clip out and the still back in, then lets the player go. */
+    private void stopClip() {
+        handler.removeCallbacks(clipStart);
+        clipApp = null;
+        android.media.MediaPlayer mp = clipPlayer;
+        clipPlayer = null;
+        if (clipView != null && clipView.getAlpha() > 0f) {
+            clipView.animate().alpha(0f).setDuration(400).withEndAction(() -> release(mp)).start();
+            if (jumpActive || heroArtKey != null) heroArt.animate().alpha(heroArtTarget).setDuration(400).start();
+        } else {
+            release(mp);
+        }
+    }
+
+    private static void release(android.media.MediaPlayer mp) {
+        if (mp == null) return;
+        try {
+            mp.stop();
+        } catch (IllegalStateException ignored) {
+            // never prepared: nothing to stop
+        }
+        mp.release();
     }
 
     /** Lines the jump row up with the first app tile, while the row is scrolled to its start. */
