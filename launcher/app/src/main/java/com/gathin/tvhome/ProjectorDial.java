@@ -219,7 +219,7 @@ final class ProjectorDial extends View {
                 text.setColor(ProjectorBar.withAlpha(muted, shown));
                 text.setTextSize(16);
                 text.setLetterSpacing(0.5f / 16);
-                c.drawText("focus, then keystone", nx[i], top + iconSize + 6 + labelSize + 6 + 16 * 0.8f, text);
+                c.drawText("keystone, then focus", nx[i], top + iconSize + 6 + labelSize + 6 + 16 * 0.8f, text);
             }
         }
         stroke.setStrokeWidth(5);
