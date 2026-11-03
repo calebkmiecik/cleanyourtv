@@ -415,7 +415,9 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         float density = parent.getResources().getDisplayMetrics().density;
         int width = parent.getWidth() > 0 ? parent.getWidth() : parent.getMeasuredWidth();
         int inner = width - parent.getPaddingLeft() - parent.getPaddingRight();
-        int w = tileWidthPx(inner, parent.getHeight(), dockSize, rowsBelowDock, dockTitle, dockRow, density), h = tileHeightPx(w);
+        int w = stillTileWidthPx(inner, dockSize, density), h;
+        if (w <= 0) w = tileWidthPx(inner, parent.getHeight(), dockSize, rowsBelowDock, dockTitle, dockRow, density);
+        h = tileHeightPx(w);
         View card = v.findViewById(R.id.card);
         ViewGroup.LayoutParams cardLp = card.getLayoutParams();
         cardLp.width = w;
@@ -484,10 +486,11 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         h.name.setAlpha(focused ? 1f : restNameAlpha);
         h.card.setScaleX(focused && animations ? focusScale() : 1f);
         h.card.setScaleY(focused && animations ? focusScale() : 1f);
-        h.card.setTranslationY(focused && advancedEffects && !dockKind ? -4f * ctx.getResources().getDisplayMetrics().density : 0f);
-        h.card.setTranslationZ(focused && advancedEffects ? 8f * ctx.getResources().getDisplayMetrics().density : 0f);
-        h.banner.setScaleX(focused && advancedEffects ? 1.035f : 1f);
-        h.banner.setScaleY(focused && advancedEffects ? 1.035f : 1f);
+        h.card.setTranslationY(focused && advancedEffects && !still() && !dockKind ? -4f * ctx.getResources().getDisplayMetrics().density : 0f);
+        h.card.setTranslationZ(focused && advancedEffects && !still() ? 8f * ctx.getResources().getDisplayMetrics().density : 0f);
+        h.zoom = focusScale();
+        h.banner.setScaleX(focused && advancedEffects && !still() ? 1.035f : 1f);
+        h.banner.setScaleY(focused && advancedEffects && !still() ? 1.035f : 1f);
         // A fully opaque banner covers the whole card (centerCrop), so the card's own fill under it is drawn for
         // nothing on every frame; keep it under banners with transparent parts and under icon tiles.
         h.card.setBackground(e.banner != null && e.banner.getOpacity() == PixelFormat.OPAQUE ? null : h.cardBackground);
@@ -680,6 +683,19 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     void setFocusScale(float scale) {
         focusScaleOverride = scale;
+    }
+
+    /** Home asked for no focus zoom: the ring alone marks the tile (Caleb's projector look). */
+    boolean still() {
+        return focusScaleOverride == 1f;
+    }
+
+    /**
+     * A still tile (no focus zoom) needs no room to grow: it fills its column but for a 16dp gap, as the browser
+     * mock (224 x 126 px tiles, 32 px apart). 0 when tiles zoom, so the usual fit applies.
+     */
+    int stillTileWidthPx(int innerWidthPx, int columns, float density) {
+        return still() && innerWidthPx > 0 && columns > 0 ? innerWidthPx / columns - Math.round(16 * density) : 0;
     }
 
     float focusScale() {
@@ -923,6 +939,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         final boolean overshoot;
         /** A dock tile: it grows in place without advanced_effects' lift, which reads as off-centre in the band (#2135). */
         boolean inDock;
+        /** The focus zoom, from the adapter at each bind (focusScale: 1 keeps the tile still). */
+        float zoom = 1.10f;
 
         Holder(View v, TileListener listener, boolean animations, boolean advancedEffects,
                boolean reducedMotion, float restNameAlpha, boolean overshoot) {
@@ -961,8 +979,9 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 view.animate().cancel();
                 banner.animate().cancel();
                 name.animate().cancel();
-                float scale = !animations ? 1f : advancedEffects ? 1.12f : 1.10f;
+                float scale = !animations ? 1f : zoom;
                 float s = focused ? scale : 1f;
+                boolean lift = advancedEffects && zoom != 1f;   // a still tile (setFocusScale(1)) neither rises nor zooms its banner
                 if (!animations) {
                     view.setScaleX(1f);
                     view.setScaleY(1f);
@@ -976,8 +995,8 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     // A short zoom with no hardware layer: building a layer for so short an animation costs more
                     // frames than it saves. The name just appears instead of fading.
                     view.animate().scaleX(s).scaleY(s)
-                            .translationY(focused && advancedEffects && !inDock ? -4f * density : 0f)
-                            .translationZ(focused && advancedEffects ? 8f * density : 0f)
+                            .translationY(focused && lift && !inDock ? -4f * density : 0f)
+                            .translationZ(focused && lift ? 8f * density : 0f)
                             .setDuration(focused ? Motion.REDUCED_MS : 60)
                             .setInterpolator(new DecelerateInterpolator())
                             .start();
@@ -988,13 +1007,13 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     if (focused) name.setTranslationY(density * 4f);
                 } else {
                     view.animate().scaleX(s).scaleY(s)
-                            .translationY(focused && advancedEffects && !inDock ? -4f * density : 0f)
-                            .translationZ(focused && advancedEffects ? 8f * density : 0f)
+                            .translationY(focused && lift && !inDock ? -4f * density : 0f)
+                            .translationZ(focused && lift ? 8f * density : 0f)
                             .setDuration(advancedEffects ? (focused ? 220 : 170) : (focused ? 260 : 180))
                             .setInterpolator(focused && !overshoot ? new DecelerateInterpolator(1.5f)
                                     : new OvershootInterpolator(focused ? (advancedEffects ? 0.7f : 1.6f) : 0f))
                             .withLayer().start();
-                    if (advancedEffects) {
+                    if (lift) {
                         banner.animate().scaleX(focused ? 1.035f : 1f).scaleY(focused ? 1.035f : 1f)
                                 .setDuration(280).start();
                     }

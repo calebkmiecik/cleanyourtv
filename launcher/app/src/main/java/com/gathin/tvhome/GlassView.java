@@ -74,7 +74,7 @@ public class GlassView extends View {
     void setStyle(String style) {
         flat = Config.GLASS_RIM.equals(style) || Config.GLASS_HALO.equals(style);
         halo = Config.GLASS_HALO.equals(style);
-        rim.setStrokeWidth((flat ? 2f : 1.5f) * density);
+        rim.setStrokeWidth((plainRing ? 2.5f : flat ? 2f : 1.5f) * density);
         invalidate();
     }
 

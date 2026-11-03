@@ -180,11 +180,11 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private View jumpFloor;   // the fade the resting cards sink into
     private boolean jumpActive;   // a card has focus: the rows are up
     /** Room the single row leaves under it for the jump row's label and peeking cards. */
-    private static final float JUMP_ROOM_DP = 92;
+    private static final float JUMP_ROOM_DP = 97;   // tiles at y 660 px, as the mock
 
     /** The ring's gap outside a tile: on with the jump row (Caleb's projector look), else GlassView's own fit. */
     private float ringOut() {
-        return jumpRow != null ? 6f : 0f;
+        return jumpRow != null ? 4.75f : 0f;   // the stroke's middle: the mock's 5 px ring sits 7 to 12 px outside the tile
     }
     private final JumpRow.Host jumpHost = new JumpRow.Host() {
         @Override
@@ -788,6 +788,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             date.setFormat24Hour("EEEE MMMM d");
             glass.setPlainRing(true);   // a crisp ring, the tile itself stays still
             adapter.setFocusScale(1f);
+            // the mock's row: the first tile at x 128 px and 256 px columns (6 x 128dp of the page's 848dp)
+            grid.setPaddingRelative(0, grid.getPaddingTop(), Math.round(80 * density), grid.getPaddingBottom());
             findViewById(R.id.clockDivider).setVisibility(View.GONE);
             View dateColumn = (View) findViewById(R.id.date).getParent();
             ((ViewGroup.MarginLayoutParams) dateColumn.getLayoutParams()).setMarginStart((int) (18 * density));
@@ -801,7 +803,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             int h = b - t;
             // Item height follows the tile size, which follows the columns and the rows that must fit (AppAdapter.tileWidthPx).
             int inner = (r - l) - grid.getPaddingLeft() - grid.getPaddingRight();
-            int tileW = AppAdapter.tileWidthPx(inner, h, COLUMNS, rowsBelowDock, cfg.dockTitle, cfg.dockRow, density);
+            int tileW = adapter.stillTileWidthPx(inner, COLUMNS, density);
+            if (tileW <= 0) tileW = AppAdapter.tileWidthPx(inner, h, COLUMNS, rowsBelowDock, cfg.dockTitle, cfg.dockRow, density);
             int itemH = AppAdapter.itemHeightPx(AppAdapter.tileHeightPx(tileW), density);
             int dockRow = itemH + (int) (AppAdapter.DOCK_EXTRA_DP * density);   // item height plus DockDecoration offsets
             int gridRows = itemH * rowsBelowDock;
