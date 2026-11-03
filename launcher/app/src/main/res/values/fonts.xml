@@ -10,4 +10,5 @@
     <!-- Serif for the clock and the big titles (Caleb's projector look). -->
     <string name="font_serif_light" translatable="false">@font/serif_light</string>
     <string name="font_serif_regular" translatable="false">@font/serif_regular</string>
+    <string name="font_serif_italic" translatable="false">@font/serif_italic</string>
 </resources>

@@ -40,6 +40,9 @@
   "stock_home_redirect": "com.google.android.apps.tv.launcherx",
   "chester_looks": true,
   "projector_bar": true,
+  "sleep_screen": true,
+  "chester_feed": "https://chester-vps.tailc316b5.ts.net/api/projector/feed",
+  "home_idle_clock_minutes": 10,
   "location": "38.9536,-94.7336",
   "hidden_apps": [
     "com.xgimi.starmirror",

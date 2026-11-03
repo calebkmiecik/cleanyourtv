@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The sleep screen (sleep_screen; SleepScene): the browser mock's, in dp (mock pixels / 2). Clock, date and
+     Lenexa weather at the left, Chester's note at the bottom. Colours come from Chester's look at runtime. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/sleepRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF0B0A0C">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="84dp"
+        android:layout_marginTop="115dp"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:baselineAligned="true">
+
+            <TextClock
+                android:id="@+id/sleepClock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:format12Hour="h:mm"
+                android:format24Hour="HH:mm"
+                android:textSize="150sp"
+                android:fontFamily="@string/font_serif_light"
+                android:letterSpacing="-0.027"
+                android:includeFontPadding="false" />
+
+            <TextClock
+                android:id="@+id/sleepAmpm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="13dp"
+                android:format12Hour="a"
+                android:format24Hour=""
+                android:textSize="20sp"
+                android:fontFamily="@string/font_regular"
+                android:letterSpacing="0.1"
+                android:textAllCaps="true" />
+        </LinearLayout>
+
+        <TextClock
+            android:id="@+id/sleepDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5dp"
+            android:layout_marginTop="13dp"
+            android:format12Hour="EEEE MMMM d"
+            android:format24Hour="EEEE MMMM d"
+            android:textSize="15sp"
+            android:fontFamily="@string/font_regular"
+            android:letterSpacing="0.27"
+            android:textAllCaps="true" />
+
+        <LinearLayout
+            android:id="@+id/sleepWeather"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="3dp"
+            android:layout_marginTop="32dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="invisible">
+
+            <ImageView
+                android:id="@+id/sleepSky"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:importantForAccessibility="no" />
+
+            <TextView
+                android:id="@+id/sleepTemp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="13dp"
+                android:textSize="42sp"
+                android:fontFamily="@string/font_serif_light"
+                android:includeFontPadding="false" />
+
+            <TextView
+                android:id="@+id/sleepSkyText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="13dp"
+                android:textSize="14sp"
+                android:fontFamily="@string/font_regular"
+                android:letterSpacing="0.07"
+                android:lineSpacingMultiplier="1.15" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/sleepNote"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_marginStart="87dp"
+        android:layout_marginBottom="60dp"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/sleepNoteText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxWidth="550dp"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:textSize="19sp"
+            android:fontFamily="@string/font_serif_italic"
+            android:lineSpacingMultiplier="1.15" />
+
+        <TextView
+            android:id="@+id/sleepNoteFrom"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="7dp"
+            android:text="@string/chester"
+            android:textSize="11sp"
+            android:fontFamily="@string/font_regular"
+            android:letterSpacing="0.27" />
+    </LinearLayout>
+</FrameLayout>

@@ -144,6 +144,10 @@ final class Config {
     final boolean chesterLooks;
     /** projector_bar: the top bar is projector | sleep, settings, and the projector button opens the dial (XGIMI). */
     final boolean projectorBar;
+    /** sleep_screen: the clock screensaver becomes the sleep screen (SleepScene): serif clock, weather, Chester's note. */
+    final boolean sleepScreen;
+    /** chester_feed: the URL of Chester's projector feed for the sleep screen's note; empty is none. */
+    final String chesterFeed;
     /** location: "lat,lng" for chester_looks' sunrise and sunset; empty uses Chester's fixed clock. */
     final String location;
     /** App library as a round button in the top bar (config.xml library_button); needs app_library. */
@@ -300,7 +304,7 @@ final class Config {
                    boolean keyFilter, boolean dockGlass, String glowStyle, boolean wallpaperCaptions,
                    boolean handleViewInputs, boolean tileMenu, boolean dockEvenPadding, boolean dockBand, boolean cinematicDots, boolean cinematicWhiteFocus, boolean wifiStatusColor, int cinematicScrim, int cinematicArt,
                    Map<String, Set<String>> wallpaperMoods, boolean gamepadPassthrough, boolean consumeVolumeKeys, boolean powerOnHome, boolean homeLongPressHome, boolean wifiStatusWarnings, List<String> topBarApps, boolean showGreeting, boolean headerWhite, boolean clockWallpaper, int clockWallpaperDim, boolean clockGlow, String glassStyle, boolean singleRow, boolean dockBandAll, boolean lunarDate, int lunarUtcOffset, boolean dateBelowClock, boolean vpnPill, String locale, boolean powerOnHomeAlways, boolean inputsConnectedOnly, boolean inputsCecStateOnly,
-                   int openOnStartNetworkWait, boolean openOnStartOnWake, boolean iconOnlyVpn, String clockFormat, boolean backOpensClock, boolean glowSnap, int focusColor, boolean chesterLooks, String location, boolean projectorBar) {
+                   int openOnStartNetworkWait, boolean openOnStartOnWake, boolean iconOnlyVpn, String clockFormat, boolean backOpensClock, boolean glowSnap, int focusColor, boolean chesterLooks, String location, boolean projectorBar, boolean sleepScreen, String chesterFeed) {
         this.handleViewInputs = handleViewInputs;
         this.tileMenu = tileMenu;
         this.inputKeycodes = inputKeycodes;
@@ -355,6 +359,8 @@ final class Config {
         this.focusColor = focusColor;
         this.chesterLooks = chesterLooks;
         this.projectorBar = projectorBar;
+        this.sleepScreen = sleepScreen;
+        this.chesterFeed = chesterFeed;
         this.location = location;
         this.libraryButton = libraryButton;
         this.showLibraryPill = showLibraryPill;
@@ -507,6 +513,8 @@ final class Config {
         int focusColor = 0;
         boolean chesterLooks = false;
         boolean projectorBar = false;
+        boolean sleepScreen = false;
+        String chesterFeed = "";
         String location = "";
         int skyIntensity = res.getInteger(R.integer.sky_intensity);
         int[] settingsKeycodes = res.getIntArray(R.array.settings_key_keycodes);
@@ -625,6 +633,9 @@ final class Config {
             focusColor = color(json, "focus_color", 0);
             chesterLooks = bool(json, "chester_looks", false);
             projectorBar = bool(json, "projector_bar", false);
+            sleepScreen = bool(json, "sleep_screen", false);
+            chesterFeed = string(json, "chester_feed", "");
+            if (!chesterFeed.startsWith("https://")) chesterFeed = "";   // a feed only over TLS
             location = string(json, "location", "");
             skyIntensity = integer(json, "sky_intensity", skyIntensity, 0, 100);
             settingsKeycodes = intArray(json, "settings_key_keycodes", settingsKeycodes);
@@ -735,7 +746,7 @@ final class Config {
                 consumeVolumeKeys, powerOnHome, homeLongPressHome, wifiStatusWarnings, topBarApps, showGreeting, headerWhite, clockWallpaper,
                 Math.max(0, Math.min(90, clockWallpaperDim)), clockGlow, glassStyle, singleRow && dockRow, dockBandAll, lunar, lunarOffset,
                 dateBelowClock, vpnPill, locale, powerOnHomeAlways, inputsConnectedOnly, inputsCecStateOnly,
-                Math.max(0, Math.min(600, openOnStartNetworkWait)), openOnStartOnWake, iconOnlyVpn, clockFormat, backOpensClock, glowSnap, focusColor, chesterLooks, location, projectorBar);
+                Math.max(0, Math.min(600, openOnStartNetworkWait)), openOnStartOnWake, iconOnlyVpn, clockFormat, backOpensClock, glowSnap, focusColor, chesterLooks, location, projectorBar, sleepScreen, chesterFeed);
     }
 
     /**

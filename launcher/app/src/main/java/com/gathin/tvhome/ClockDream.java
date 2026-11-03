@@ -9,6 +9,7 @@ import android.service.dreams.DreamService;
 public class ClockDream extends DreamService {
 
     private ClockScene scene;
+    private SleepScene sleep;   // sleep_screen: Caleb's projector look instead of the glow clock
 
     @Override
     public void onAttachedToWindow() {
@@ -16,8 +17,14 @@ public class ClockDream extends DreamService {
         setInteractive(false);   // any key wakes the TV back to where it was
         setFullscreen(true);
         setScreenBright(false);
+        Config cfg = Config.load(this);
+        if (cfg.sleepScreen) {
+            setContentView(R.layout.dream_sleep);
+            sleep = new SleepScene(getWindow().getDecorView(), cfg);
+            return;
+        }
         setContentView(R.layout.dream_clock);
-        ClockFormat.apply(getWindow().getDecorView(), Config.load(this).clockFormat);
+        ClockFormat.apply(getWindow().getDecorView(), cfg.clockFormat);
         scene = new ClockScene(getWindow().getDecorView());
         scene.useHomeWallpaper(this);
     }
@@ -25,18 +32,21 @@ public class ClockDream extends DreamService {
     @Override
     public void onDreamingStarted() {
         super.onDreamingStarted();
-        scene.start();
+        if (sleep != null) sleep.start();
+        else scene.start();
     }
 
     @Override
     public void onDreamingStopped() {
-        scene.stop();
+        if (sleep != null) sleep.stop();
+        else scene.stop();
         super.onDreamingStopped();
     }
 
     @Override
     public void onDetachedFromWindow() {
         if (scene != null) scene.stop();
+        if (sleep != null) sleep.stop();
         super.onDetachedFromWindow();
     }
 }

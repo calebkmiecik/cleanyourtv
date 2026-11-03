@@ -160,4 +160,5 @@
     <string name="clock_format_24">24-hour</string>
     <!-- Caleb's projector: the pinned shows' row under the apps (JumpRow). -->
     <string name="jump_back_in" translatable="false">jump back in</string>
+    <string name="chester" translatable="false">CHESTER</string>
 </resources>

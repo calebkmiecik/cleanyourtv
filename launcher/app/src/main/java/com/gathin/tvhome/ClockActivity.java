@@ -19,15 +19,22 @@ public class ClockActivity extends Activity {
 
 
     private ClockScene scene;
+    private SleepScene sleep;   // sleep_screen: Caleb's projector look instead of the glow clock
 
     @Override
     @SuppressWarnings("deprecation")
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.dream_clock);
-        ClockFormat.apply(getWindow().getDecorView(), Config.load(this).clockFormat);
+        Config cfg = Config.load(this);
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE);
+        if (cfg.sleepScreen) {
+            setContentView(R.layout.dream_sleep);
+            sleep = new SleepScene(getWindow().getDecorView(), cfg);
+            return;
+        }
+        setContentView(R.layout.dream_clock);
+        ClockFormat.apply(getWindow().getDecorView(), cfg.clockFormat);
         scene = new ClockScene(getWindow().getDecorView());
         scene.useHomeWallpaper(this);
     }
@@ -35,12 +42,14 @@ public class ClockActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        scene.start();
+        if (sleep != null) sleep.start();
+        else scene.start();
     }
 
     @Override
     protected void onPause() {
-        scene.stop();
+        if (sleep != null) sleep.stop();
+        else scene.stop();
         super.onPause();
         finish();   // never left behind in the back stack
     }

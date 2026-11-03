@@ -39,6 +39,31 @@ final class Icons {
             case "sleep":
                 d = "M22 19A10 10 0 0 1 11 6a10 10 0 1 0 11 13z";
                 break;
+            // the sleep screen's weather (the mock's SKY set)
+            case "clear":
+                d = "M20.5 15a5.5 5.5 0 1 1-11 0a5.5 5.5 0 1 1 11 0M15 3v3M15 24v3M3 15h3M24 15h3M6.5 6.5l2.1 2.1M21.4 21.4l2.1 2.1M6.5 23.5l2.1-2.1M21.4 8.6l2.1-2.1";
+                break;
+            case "night":
+                d = "M22 19A10 10 0 0 1 11 6a10 10 0 1 0 11 13z";
+                break;
+            case "cloud":
+                d = "M9 23h13a5 5 0 0 0 0-10 7 7 0 0 0-13.5 1.5A4.3 4.3 0 0 0 9 23z";
+                break;
+            case "partly":
+                d = "M10 8.5a5 5 0 0 1 8.6 2.4M10.5 3v2M4 9.5h2M5.6 4.6l1.4 1.4M11 25h11a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.5 1.3A3.9 3.9 0 0 0 11 25z";
+                break;
+            case "rain":
+                d = "M9 19h13a5 5 0 0 0 0-10 7 7 0 0 0-13.5 1.5A4.3 4.3 0 0 0 9 19zM11 22l-1.5 4M16 22l-1.5 4M21 22l-1.5 4";
+                break;
+            case "snow":
+                d = "M9 19h13a5 5 0 0 0 0-10 7 7 0 0 0-13.5 1.5A4.3 4.3 0 0 0 9 19zM11 23v.1M16 25v.1M21 23v.1M13.5 27v.1M18.5 27v.1";
+                break;
+            case "storm":
+                d = "M9 19h13a5 5 0 0 0 0-10 7 7 0 0 0-13.5 1.5A4.3 4.3 0 0 0 9 19zM16 20l-3 5h4l-2 4";
+                break;
+            case "fog":
+                d = "M5 12h20M7 17h18M5 22h16";
+                break;
             case "settings":   // three sliders; the knobs are filled circles drawn by the caller
                 d = "M4 8h22M4 15h22M4 22h22";
                 break;
