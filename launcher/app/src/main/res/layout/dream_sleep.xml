@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The sleep screen (sleep_screen; SleepScene): the browser mock's, in dp (mock pixels / 2). Clock, date and
+<!-- The sleep screen (sleep_screen; SleepScene): the browser mock's, in dp (mock pixels / 2); the margins are measured
+     against the mock on the projector, since the serif's tall line box pushes the rows down. Clock, date and
      Lenexa weather at the left, Chester's note at the bottom. Colours come from Chester's look at runtime. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/sleepRoot"
@@ -11,7 +12,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="84dp"
-        android:layout_marginTop="115dp"
+        android:layout_marginTop="87dp"
         android:orientation="vertical">
 
         <LinearLayout
@@ -49,7 +50,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
-            android:layout_marginTop="13dp"
+            android:layout_marginTop="-15dp"
             android:format12Hour="EEEE MMMM d"
             android:format24Hour="EEEE MMMM d"
             android:textSize="15sp"
@@ -62,7 +63,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="3dp"
-            android:layout_marginTop="32dp"
+            android:layout_marginTop="23dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:visibility="invisible">
